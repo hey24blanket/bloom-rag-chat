@@ -1,48 +1,99 @@
-const { initializeApp, cert, getApps } = require('firebase-admin/app');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
-const { GoogleGenAI } = require('@google/genai');
+const {
+  initializeApp,
+  cert,
+  getApps,
+} = require('firebase-admin/app');
+
+const {
+  getFirestore,
+  FieldValue,
+} = require('firebase-admin/firestore');
+
+const {
+  GoogleGenAI,
+} = require('@google/genai');
+
 const OpenAI = require('openai');
 
 /**
- * --------------------------------------------------------------------------
+ * ============================================================================
  * 고정 설정
- * --------------------------------------------------------------------------
+ * ============================================================================
+ *
+ * 현재 Firebase knowledge_chunks에 저장된 embedding 기준:
+ *
+ *   모델: gemini-embedding-001
+ *   차원: 768
+ *
+ * 질문 embedding도 반드시 동일한 모델/차원을 사용합니다.
  */
 
-// Firebase에 이미 저장된 백서 embedding과 동일하게 유지
-const EMBEDDING_MODEL = 'gemini-embedding-001';
-const EMBEDDING_DIMENSIONS = 768;
+const EMBEDDING_MODEL =
+  'gemini-embedding-001';
 
-// 실제 답변 모델
-const MODELS = {
-  gemini: 'gemini-3.1-flash-lite',
-  gpt: 'gpt-5.6-luna',
-};
-
-// 검색 기본값
-const DEFAULT_TOP_K = 5;
-const DEFAULT_DISTANCE_THRESHOLD = 0.70;
+const EMBEDDING_DIMENSIONS =
+  768;
 
 /**
- * --------------------------------------------------------------------------
+ * 실제 답변 생성에 사용할 모델
+ */
+const MODELS = {
+  gemini:
+    'gemini-3.1-flash-lite',
+
+  gpt:
+    'gpt-5.6-luna',
+};
+
+/**
+ * 기본 RAG 설정
+ */
+const DEFAULT_TOP_K =
+  5;
+
+const DEFAULT_DISTANCE_THRESHOLD =
+  0.70;
+
+
+/**
+ * ============================================================================
+ * 시간 측정
+ * ============================================================================
+ *
+ * performance.now()를 사용할 수 있는 Node 환경을 기준으로 합니다.
+ *
+ * 반환 단위는 milliseconds(ms)입니다.
+ */
+
+function now() {
+  return performance.now();
+}
+
+
+/**
+ * ============================================================================
  * Firebase 초기화
- * --------------------------------------------------------------------------
+ * ============================================================================
  */
 
 function getDb() {
   if (!getApps().length) {
-    const rawEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+    const rawServiceAccount =
+      process.env.FIREBASE_SERVICE_ACCOUNT;
 
-    if (!rawEnv) {
+    if (!rawServiceAccount) {
       throw new Error(
-        "FIREBASE_SERVICE_ACCOUNT 환경변수가 설정되지 않았습니다."
+        'FIREBASE_SERVICE_ACCOUNT 환경변수가 설정되지 않았습니다.'
       );
     }
 
     let serviceAccount;
 
     try {
-      serviceAccount = JSON.parse(rawEnv);
+      serviceAccount =
+        JSON.parse(
+          rawServiceAccount
+        );
     } catch (error) {
       throw new Error(
         `FIREBASE_SERVICE_ACCOUNT JSON 파싱 실패: ${error.message}`
@@ -67,21 +118,29 @@ function getDb() {
       );
     }
 
+    /**
+     * 환경변수의 \n 문자를 실제 줄바꿈으로 변환
+     */
     serviceAccount.private_key =
-      serviceAccount.private_key.replace(/\\n/g, '\n');
+      serviceAccount.private_key.replace(
+        /\\n/g,
+        '\n'
+      );
 
     initializeApp({
-      credential: cert(serviceAccount),
+      credential:
+        cert(serviceAccount),
     });
   }
 
   return getFirestore();
 }
 
+
 /**
- * --------------------------------------------------------------------------
- * 요청 body
- * --------------------------------------------------------------------------
+ * ============================================================================
+ * 요청 Body
+ * ============================================================================
  */
 
 function parseBody(req) {
@@ -89,12 +148,17 @@ function parseBody(req) {
     return {};
   }
 
-  if (typeof req.body === 'object') {
+  if (
+    typeof req.body ===
+    'object'
+  ) {
     return req.body;
   }
 
   try {
-    return JSON.parse(req.body);
+    return JSON.parse(
+      req.body
+    );
   } catch {
     throw new Error(
       '요청 body가 유효한 JSON이 아닙니다.'
@@ -102,24 +166,38 @@ function parseBody(req) {
   }
 }
 
+
 /**
- * --------------------------------------------------------------------------
+ * ============================================================================
  * 입력 검증
- * --------------------------------------------------------------------------
+ * ============================================================================
  */
 
-function normalizeUserQuery(value) {
-  if (typeof value !== 'string') {
-    throw new Error('message는 문자열이어야 합니다.');
+function normalizeUserQuery(
+  value
+) {
+  if (
+    typeof value !==
+    'string'
+  ) {
+    throw new Error(
+      'message는 문자열이어야 합니다.'
+    );
   }
 
-  const query = value.trim();
+  const query =
+    value.trim();
 
   if (!query) {
-    throw new Error('질문을 입력해주세요.');
+    throw new Error(
+      '질문을 입력해주세요.'
+    );
   }
 
-  if (query.length > 10000) {
+  if (
+    query.length >
+    10000
+  ) {
     throw new Error(
       '질문이 너무 깁니다. 10,000자 이하로 입력해주세요.'
     );
@@ -128,12 +206,30 @@ function normalizeUserQuery(value) {
   return query;
 }
 
-function normalizeSystemPrompt(value) {
-  if (typeof value !== 'string') {
-    throw new Error('systemPrompt는 문자열이어야 합니다.');
+
+/**
+ * --------------------------------------------------------------------------
+ * System Prompt
+ * --------------------------------------------------------------------------
+ *
+ * 시스템 프롬프트는 서버에 하드코딩하지 않습니다.
+ * index.html의 설정창에서 저장한 값을 전달받습니다.
+ */
+
+function normalizeSystemPrompt(
+  value
+) {
+  if (
+    typeof value !==
+    'string'
+  ) {
+    throw new Error(
+      'systemPrompt는 문자열이어야 합니다.'
+    );
   }
 
-  const prompt = value.trim();
+  const prompt =
+    value.trim();
 
   if (!prompt) {
     throw new Error(
@@ -141,7 +237,10 @@ function normalizeSystemPrompt(value) {
     );
   }
 
-  if (prompt.length > 30000) {
+  if (
+    prompt.length >
+    30000
+  ) {
     throw new Error(
       '시스템 프롬프트가 너무 깁니다. 30,000자 이하로 입력해주세요.'
     );
@@ -150,7 +249,16 @@ function normalizeSystemPrompt(value) {
   return prompt;
 }
 
-function normalizeModel(value) {
+
+/**
+ * --------------------------------------------------------------------------
+ * Model
+ * --------------------------------------------------------------------------
+ */
+
+function normalizeModel(
+  value
+) {
   if (!value) {
     return MODELS.gemini;
   }
@@ -174,20 +282,46 @@ function normalizeModel(value) {
   );
 }
 
-function normalizeTopK(value) {
-  const parsed = Number(value);
 
-  if (!Number.isFinite(parsed)) {
+/**
+ * --------------------------------------------------------------------------
+ * Top K
+ * --------------------------------------------------------------------------
+ */
+
+function normalizeTopK(
+  value
+) {
+  const parsed =
+    Number(value);
+
+  if (
+    !Number.isFinite(
+      parsed
+    )
+  ) {
     return DEFAULT_TOP_K;
   }
 
   return Math.min(
-    Math.max(Math.floor(parsed), 1),
+    Math.max(
+      Math.floor(parsed),
+      1
+    ),
     10
   );
 }
 
-function normalizeDistanceThreshold(value) {
+
+/**
+ * --------------------------------------------------------------------------
+ * Cosine Distance Threshold
+ * --------------------------------------------------------------------------
+ */
+
+function normalizeDistanceThreshold(
+  value
+) {
   if (
     value === undefined ||
     value === null ||
@@ -196,26 +330,41 @@ function normalizeDistanceThreshold(value) {
     return DEFAULT_DISTANCE_THRESHOLD;
   }
 
-  const parsed = Number(value);
+  const parsed =
+    Number(value);
 
-  if (!Number.isFinite(parsed)) {
+  if (
+    !Number.isFinite(
+      parsed
+    )
+  ) {
     return DEFAULT_DISTANCE_THRESHOLD;
   }
 
+  /**
+   * 일반적인 cosine distance 범위:
+   * 0 ~ 2
+   *
+   * 낮을수록 유사
+   */
   return Math.min(
     Math.max(parsed, 0),
     2
   );
 }
 
+
 /**
- * --------------------------------------------------------------------------
- * 질문 임베딩
- * --------------------------------------------------------------------------
+ * ============================================================================
+ * Query Embedding
+ * ============================================================================
  *
- * 백서 embedding과 동일:
- * gemini-embedding-001 / 768차원
- * --------------------------------------------------------------------------
+ * Firebase 백서 embedding과 동일한:
+ *
+ *   gemini-embedding-001
+ *   768 dimensions
+ *
+ * 를 사용합니다.
  */
 
 async function createQueryEmbedding(
@@ -225,28 +374,38 @@ async function createQueryEmbedding(
   const url =
     `https://generativelanguage.googleapis.com/v1beta/` +
     `models/${EMBEDDING_MODEL}:embedContent` +
-    `?key=${encodeURIComponent(geminiKey)}`;
+    `?key=${encodeURIComponent(
+      geminiKey
+    )}`;
 
-  const response = await fetch(url, {
-    method: 'POST',
+  const response =
+    await fetch(
+      url,
+      {
+        method:
+          'POST',
 
-    headers: {
-      'Content-Type': 'application/json',
-    },
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
 
-    body: JSON.stringify({
-      content: {
-        parts: [
-          {
-            text: userQuery,
-          },
-        ],
-      },
+        body:
+          JSON.stringify({
+            content: {
+              parts: [
+                {
+                  text:
+                    userQuery,
+                },
+              ],
+            },
 
-      outputDimensionality:
-        EMBEDDING_DIMENSIONS,
-    }),
-  });
+            outputDimensionality:
+              EMBEDDING_DIMENSIONS,
+          }),
+      }
+    );
 
   const data =
     await response.json();
@@ -264,7 +423,11 @@ async function createQueryEmbedding(
   const values =
     data?.embedding?.values;
 
-  if (!Array.isArray(values)) {
+  if (
+    !Array.isArray(
+      values
+    )
+  ) {
     throw new Error(
       `Gemini 임베딩 결과가 올바르지 않습니다: ${JSON.stringify(data)}`
     );
@@ -284,10 +447,11 @@ async function createQueryEmbedding(
   return values;
 }
 
+
 /**
- * --------------------------------------------------------------------------
+ * ============================================================================
  * Firestore Vector Search
- * --------------------------------------------------------------------------
+ * ============================================================================
  */
 
 async function retrieveKnowledge(
@@ -298,9 +462,12 @@ async function retrieveKnowledge(
 ) {
   const vectorQuery =
     db
-      .collection('knowledge_chunks')
+      .collection(
+        'knowledge_chunks'
+      )
       .findNearest({
-        vectorField: 'embedding',
+        vectorField:
+          'embedding',
 
         queryVector:
           FieldValue.vector(
@@ -313,6 +480,10 @@ async function retrieveKnowledge(
         distanceMeasure:
           'COSINE',
 
+        /**
+         * 실제 vector distance를
+         * 결과 데이터에 추가
+         */
         distanceResultField:
           'vector_distance',
       });
@@ -322,45 +493,56 @@ async function retrieveKnowledge(
 
   const searched =
     snapshot.docs
-      .map((doc) => {
-        const data =
-          doc.data();
+      .map(
+        (doc) => {
+          const data =
+            doc.data();
 
-        return {
-          id:
-            doc.id,
+          return {
+            id:
+              doc.id,
 
-          text:
-            typeof data.text ===
-            'string'
-              ? data.text
-              : '',
+            text:
+              typeof data.text ===
+              'string'
+                ? data.text
+                : '',
 
-          source:
-            data.source ||
-            null,
+            source:
+              data.source ||
+              null,
 
-          chunk_index:
-            typeof data.chunk_index ===
-            'number'
-              ? data.chunk_index
-              : null,
+            chunk_index:
+              typeof data.chunk_index ===
+              'number'
+                ? data.chunk_index
+                : null,
 
-          distance:
-            typeof data.vector_distance ===
-            'number'
-              ? data.vector_distance
-              : null,
-        };
-      })
+            distance:
+              typeof data.vector_distance ===
+              'number'
+                ? data.vector_distance
+                : null,
+          };
+        }
+      )
       .filter(
-        (item) => item.text
+        (item) =>
+          item.text
       );
 
-  // COSINE distance는 낮을수록 유사
+  /**
+   * Cosine distance가 threshold보다 작은
+   * 결과만 최종적으로 사용
+   */
   const matched =
     searched.filter(
       (item) => {
+        /**
+         * 혹시 Firestore에서 distance가
+         * 반환되지 않는 예외 상황이라면
+         * 검색 결과를 일단 유지
+         */
         if (
           item.distance ===
           null
@@ -381,10 +563,11 @@ async function retrieveKnowledge(
   };
 }
 
+
 /**
- * --------------------------------------------------------------------------
+ * ============================================================================
  * RAG Context
- * --------------------------------------------------------------------------
+ * ============================================================================
  */
 
 function buildContext(
@@ -399,24 +582,32 @@ function buildContext(
 
   return chunks
     .map(
-      (chunk, index) => {
-        const metadata = [
-          `청크 ${index + 1}`,
+      (
+        chunk,
+        index
+      ) => {
+        const metadata =
+          [
+            `청크 ${index + 1}`,
 
-          chunk.source
-            ? `source=${chunk.source}`
-            : null,
+            chunk.source
+              ? `source=${chunk.source}`
+              : null,
 
-          chunk.chunk_index !== null
-            ? `chunk_index=${chunk.chunk_index}`
-            : null,
+            chunk.chunk_index !==
+              null
+              ? `chunk_index=${chunk.chunk_index}`
+              : null,
 
-          chunk.distance !== null
-            ? `cosine_distance=${chunk.distance.toFixed(6)}`
-            : null,
-        ]
-          .filter(Boolean)
-          .join(' | ');
+            chunk.distance !==
+              null
+              ? `cosine_distance=${chunk.distance.toFixed(6)}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(
+              ' | '
+            );
 
         return (
           `[${metadata}]\n` +
@@ -429,14 +620,22 @@ function buildContext(
     );
 }
 
+
 /**
- * --------------------------------------------------------------------------
- * 최종 User Prompt
- * --------------------------------------------------------------------------
+ * ============================================================================
+ * Final User Prompt
+ * ============================================================================
  *
- * System Prompt는 별도로 LLM의 system/instructions 영역에 들어가고,
- * 이 함수에서는 RAG 결과 + 실제 사용자 질문만 구성합니다.
- * --------------------------------------------------------------------------
+ * System Prompt는 별도로 LLM의
+ * system / instructions에 들어갑니다.
+ *
+ * 여기에는:
+ *
+ *   RAG 검색 결과
+ *   +
+ *   사용자 질문
+ *
+ * 만 들어갑니다.
  */
 
 function buildUserPrompt(
@@ -446,7 +645,9 @@ function buildUserPrompt(
   return `
 [백서 근거]
 
-${buildContext(retrievedChunks)}
+${buildContext(
+  retrievedChunks
+)}
 
 [사용자 질문]
 
@@ -454,10 +655,11 @@ ${userQuery}
 `.trim();
 }
 
+
 /**
- * --------------------------------------------------------------------------
- * Gemini 답변
- * --------------------------------------------------------------------------
+ * ============================================================================
+ * Gemini Answer
+ * ============================================================================
  */
 
 async function generateGeminiAnswer(
@@ -467,7 +669,8 @@ async function generateGeminiAnswer(
 ) {
   const ai =
     new GoogleGenAI({
-      apiKey: geminiKey,
+      apiKey:
+        geminiKey,
     });
 
   const response =
@@ -479,6 +682,10 @@ async function generateGeminiAnswer(
         prompt,
 
       config: {
+        /**
+         * 사용자가 설정창에서
+         * 저장한 시스템 프롬프트
+         */
         systemInstruction:
           systemPrompt,
       },
@@ -496,10 +703,16 @@ async function generateGeminiAnswer(
   return answer;
 }
 
+
 /**
- * --------------------------------------------------------------------------
- * GPT-5.6 Luna 답변
- * --------------------------------------------------------------------------
+ * ============================================================================
+ * GPT-5.6 Luna Answer
+ * ============================================================================
+ *
+ * temperature는 사용하지 않습니다.
+ *
+ * reasoning.effort:
+ *   medium
  */
 
 async function generateGptAnswer(
@@ -509,7 +722,8 @@ async function generateGptAnswer(
 ) {
   const openai =
     new OpenAI({
-      apiKey: openaiKey,
+      apiKey:
+        openaiKey,
     });
 
   const response =
@@ -517,12 +731,23 @@ async function generateGptAnswer(
       model:
         MODELS.gpt,
 
+      /**
+       * 사용자 설정창에서
+       * 전달된 System Prompt
+       */
       instructions:
         systemPrompt,
 
+      /**
+       * RAG 검색 결과 +
+       * 사용자 질문
+       */
       input:
         prompt,
 
+      /**
+       * GPT-5.6 Luna reasoning
+       */
       reasoning: {
         effort:
           'medium',
@@ -541,15 +766,29 @@ async function generateGptAnswer(
   return answer;
 }
 
+
 /**
- * --------------------------------------------------------------------------
- * Main API
- * --------------------------------------------------------------------------
+ * ============================================================================
+ * 메인 API
+ * ============================================================================
  */
 
 module.exports =
-  async (req, res) => {
-    if (req.method !== 'POST') {
+  async (
+    req,
+    res
+  ) => {
+
+    /**
+     * ------------------------------------------------------------------------
+     * Method Check
+     * ------------------------------------------------------------------------
+     */
+
+    if (
+      req.method !==
+      'POST'
+    ) {
       res.setHeader(
         'Allow',
         'POST'
@@ -563,7 +802,20 @@ module.exports =
         });
     }
 
+    /**
+     * 서버 전체 처리 시작
+     */
+    const totalStart =
+      now();
+
     try {
+
+      /**
+       * ----------------------------------------------------------------------
+       * 1. Request Parsing
+       * ----------------------------------------------------------------------
+       */
+
       const body =
         parseBody(req);
 
@@ -592,6 +844,13 @@ module.exports =
           body.distanceThreshold
         );
 
+
+      /**
+       * ----------------------------------------------------------------------
+       * API Keys
+       * ----------------------------------------------------------------------
+       */
+
       const geminiKey =
         process.env.GEMINI_API_KEY;
 
@@ -600,7 +859,7 @@ module.exports =
           .status(500)
           .json({
             error:
-              "GEMINI_API_KEY 환경변수가 설정되지 않았습니다.",
+              'GEMINI_API_KEY 환경변수가 설정되지 않았습니다.',
           });
       }
 
@@ -613,78 +872,227 @@ module.exports =
           .status(500)
           .json({
             error:
-              "OPENAI_API_KEY 환경변수가 설정되지 않았습니다.",
+              'OPENAI_API_KEY 환경변수가 설정되지 않았습니다.',
           });
       }
+
+
+      /**
+       * ----------------------------------------------------------------------
+       * Firebase
+       * ----------------------------------------------------------------------
+       */
 
       const db =
         getDb();
 
+
       /**
-       * 1. 질문 embedding
+       * ======================================================================
+       * STEP 1
+       * Query Embedding
+       * ======================================================================
        */
+
+      const embeddingStart =
+        now();
+
       const queryVector =
         await createQueryEmbedding(
           userQuery,
           geminiKey
         );
 
+      const embeddingMs =
+        now() -
+        embeddingStart;
+
+
       /**
-       * 2. Firebase vector search
+       * ======================================================================
+       * STEP 2
+       * Firebase Vector Search
+       * ======================================================================
        */
+
+      const retrievalStart =
+        now();
+
       const retrieval =
         await retrieveKnowledge(
           db,
+
           queryVector,
+
           topK,
+
           distanceThreshold
         );
 
+      const retrievalMs =
+        now() -
+        retrievalStart;
+
+
       /**
-       * 3. RAG user prompt
+       * ======================================================================
+       * STEP 3
+       * Build RAG User Prompt
+       * ======================================================================
+       *
+       * 이 시간은 LLM 시간에 포함하지 않습니다.
+       *
+       * 실제로 중요한 병목은:
+       *
+       *   Embedding
+       *   Firebase RAG
+       *   LLM
+       *
+       * 세 구간입니다.
        */
+
       const prompt =
         buildUserPrompt(
           userQuery,
           retrieval.matched
         );
 
+
       /**
-       * 4. LLM
+       * ======================================================================
+       * STEP 4
+       * LLM Generation
+       * ======================================================================
        */
+
+      const llmStart =
+        now();
+
       let answer;
 
       if (
         selectedModel ===
         MODELS.gpt
       ) {
+
         answer =
           await generateGptAnswer(
             prompt,
+
             systemPrompt,
+
             process.env.OPENAI_API_KEY
           );
+
       } else {
+
         answer =
           await generateGeminiAnswer(
             prompt,
+
             systemPrompt,
+
             geminiKey
           );
+
       }
 
-      /**
-       * 5. 결과 반환
-       */
-      return res
-        .status(200)
-        .json({
-          answer,
+      const llmMs =
+        now() -
+        llmStart;
 
+
+      /**
+       * ======================================================================
+       * TOTAL
+       * ======================================================================
+       */
+
+      const totalMs =
+        now() -
+        totalStart;
+
+
+      /**
+       * ======================================================================
+       * Console Debug
+       * ======================================================================
+       *
+       * Vercel 로그 / 로컬 로그에서
+       * 병목을 바로 확인할 수 있습니다.
+       */
+
+      console.log(
+        '[RAG Timing]',
+        {
           model:
             selectedModel,
 
+          embeddingMs:
+            Number(
+              embeddingMs.toFixed(
+                2
+              )
+            ),
+
+          retrievalMs:
+            Number(
+              retrievalMs.toFixed(
+                2
+              )
+            ),
+
+          llmMs:
+            Number(
+              llmMs.toFixed(
+                2
+              )
+            ),
+
+          totalMs:
+            Number(
+              totalMs.toFixed(
+                2
+              )
+            ),
+
+          topK,
+
+          searchedCount:
+            retrieval.searched.length,
+
+          matchedCount:
+            retrieval.matched.length,
+        }
+      );
+
+
+      /**
+       * ======================================================================
+       * Response
+       * ======================================================================
+       */
+
+      return res
+        .status(200)
+        .json({
+
+          /**
+           * 최종 LLM 답변
+           */
+          answer,
+
+          /**
+           * 사용 모델
+           */
+          model:
+            selectedModel,
+
+          /**
+           * RAG 검색 결과
+           */
           retrieval: {
+
             topK,
 
             distanceThreshold,
@@ -697,7 +1105,10 @@ module.exports =
 
             chunks:
               retrieval.matched.map(
-                (chunk) => ({
+                (
+                  chunk
+                ) => ({
+
                   id:
                     chunk.id,
 
@@ -712,23 +1123,108 @@ module.exports =
 
                   text:
                     chunk.text,
+
                 })
               ),
+
           },
+
+          /**
+           * 처리 시간
+           *
+           * index.html이 이 값을 받아서:
+           *
+           * 임베딩
+           * Firebase RAG
+           * LLM
+           * 전체
+           *
+           * 를 화면에 표시합니다.
+           */
+          timing: {
+
+            embeddingMs:
+              Number(
+                embeddingMs.toFixed(
+                  2
+                )
+              ),
+
+            retrievalMs:
+              Number(
+                retrievalMs.toFixed(
+                  2
+                )
+              ),
+
+            llmMs:
+              Number(
+                llmMs.toFixed(
+                  2
+                )
+              ),
+
+            totalMs:
+              Number(
+                totalMs.toFixed(
+                  2
+                )
+              ),
+
+          },
+
         });
 
-    } catch (error) {
+    } catch (
+      error
+    ) {
+
+      /**
+       * 전체 처리 시간
+       * 오류가 난 경우에도 로그로 남김
+       */
+      const totalMs =
+        now() -
+        totalStart;
+
       console.error(
-        'RAG API Error:',
+        '[RAG API Error]',
         error
+      );
+
+      console.error(
+        '[RAG Error Timing]',
+        {
+          totalMs:
+            Number(
+              totalMs.toFixed(
+                2
+              )
+            ),
+        }
       );
 
       return res
         .status(500)
         .json({
+
           error:
             error?.message ||
             '서버 내부 오류가 발생했습니다.',
+
+          timing: {
+
+            totalMs:
+              Number(
+                totalMs.toFixed(
+                  2
+                )
+              ),
+
+          },
+
         });
+
     }
+
   };
