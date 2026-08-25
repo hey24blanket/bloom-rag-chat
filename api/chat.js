@@ -9,7 +9,7 @@ const OpenAI = require('openai');
  * --------------------------------------------------------------------------
  */
 
-// 현재 Firebase knowledge_chunks의 embedding과 동일하게 유지
+// Firebase에 이미 저장된 백서 embedding과 동일하게 유지
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 const EMBEDDING_DIMENSIONS = 768;
 
@@ -19,23 +19,9 @@ const MODELS = {
   gpt: 'gpt-5.6-luna',
 };
 
-// 검색 설정
+// 검색 기본값
 const DEFAULT_TOP_K = 5;
 const DEFAULT_DISTANCE_THRESHOLD = 0.70;
-
-// 서버가 관리하는 시스템 프롬프트
-const SYSTEM_PROMPT = `
-너는 "사주그랩 기술 백서"를 근거로 답변하는 RAG(검색증강생성) 어시스턴트다.
-
-반드시 다음 규칙을 지켜라.
-
-1. 제공된 [백서 근거]를 가장 중요한 사실 근거로 사용한다.
-2. 백서 근거에 없는 내용을 사실처럼 만들어내지 않는다.
-3. 근거가 충분하지 않으면 "제공된 백서에서 확인할 수 없습니다."라고 명확하게 답한다.
-4. 숫자, 공식, 가중치, 알고리즘, 구조에 관한 내용은 백서의 의미를 임의로 변경하지 않는다.
-5. 백서에 없는 일반 지식을 덧붙일 경우 백서의 내용과 구분한다.
-6. 질문에 직접 답하고 불필요하게 장황하게 설명하지 않는다.
-`.trim();
 
 /**
  * --------------------------------------------------------------------------
@@ -94,7 +80,7 @@ function getDb() {
 
 /**
  * --------------------------------------------------------------------------
- * 입력 검증
+ * 요청 body
  * --------------------------------------------------------------------------
  */
 
@@ -116,6 +102,12 @@ function parseBody(req) {
   }
 }
 
+/**
+ * --------------------------------------------------------------------------
+ * 입력 검증
+ * --------------------------------------------------------------------------
+ */
+
 function normalizeUserQuery(value) {
   if (typeof value !== 'string') {
     throw new Error('message는 문자열이어야 합니다.');
@@ -134,6 +126,28 @@ function normalizeUserQuery(value) {
   }
 
   return query;
+}
+
+function normalizeSystemPrompt(value) {
+  if (typeof value !== 'string') {
+    throw new Error('systemPrompt는 문자열이어야 합니다.');
+  }
+
+  const prompt = value.trim();
+
+  if (!prompt) {
+    throw new Error(
+      '시스템 프롬프트를 설정에서 입력해주세요.'
+    );
+  }
+
+  if (prompt.length > 30000) {
+    throw new Error(
+      '시스템 프롬프트가 너무 깁니다. 30,000자 이하로 입력해주세요.'
+    );
+  }
+
+  return prompt;
 }
 
 function normalizeModel(value) {
@@ -201,7 +215,6 @@ function normalizeDistanceThreshold(value) {
  *
  * 백서 embedding과 동일:
  * gemini-embedding-001 / 768차원
- *
  * --------------------------------------------------------------------------
  */
 
@@ -216,9 +229,11 @@ async function createQueryEmbedding(
 
   const response = await fetch(url, {
     method: 'POST',
+
     headers: {
       'Content-Type': 'application/json',
     },
+
     body: JSON.stringify({
       content: {
         parts: [
@@ -227,11 +242,14 @@ async function createQueryEmbedding(
           },
         ],
       },
-      outputDimensionality: EMBEDDING_DIMENSIONS,
+
+      outputDimensionality:
+        EMBEDDING_DIMENSIONS,
     }),
   });
 
-  const data = await response.json();
+  const data =
+    await response.json();
 
   if (!response.ok) {
     const apiMessage =
@@ -243,7 +261,8 @@ async function createQueryEmbedding(
     );
   }
 
-  const values = data?.embedding?.values;
+  const values =
+    data?.embedding?.values;
 
   if (!Array.isArray(values)) {
     throw new Error(
@@ -251,7 +270,10 @@ async function createQueryEmbedding(
     );
   }
 
-  if (values.length !== EMBEDDING_DIMENSIONS) {
+  if (
+    values.length !==
+    EMBEDDING_DIMENSIONS
+  ) {
     throw new Error(
       `임베딩 차원이 맞지 않습니다. ` +
       `예상=${EMBEDDING_DIMENSIONS}, ` +
@@ -275,13 +297,25 @@ async function retrieveKnowledge(
   distanceThreshold
 ) {
   const vectorQuery =
-    db.collection('knowledge_chunks').findNearest({
-      vectorField: 'embedding',
-      queryVector: FieldValue.vector(queryVector),
-      limit: topK,
-      distanceMeasure: 'COSINE',
-      distanceResultField: 'vector_distance',
-    });
+    db
+      .collection('knowledge_chunks')
+      .findNearest({
+        vectorField: 'embedding',
+
+        queryVector:
+          FieldValue.vector(
+            queryVector
+          ),
+
+        limit:
+          topK,
+
+        distanceMeasure:
+          'COSINE',
+
+        distanceResultField:
+          'vector_distance',
+      });
 
   const snapshot =
     await vectorQuery.get();
@@ -289,44 +323,57 @@ async function retrieveKnowledge(
   const searched =
     snapshot.docs
       .map((doc) => {
-        const data = doc.data();
+        const data =
+          doc.data();
 
         return {
-          id: doc.id,
+          id:
+            doc.id,
 
           text:
-            typeof data.text === 'string'
+            typeof data.text ===
+            'string'
               ? data.text
               : '',
 
           source:
-            data.source || null,
+            data.source ||
+            null,
 
           chunk_index:
-            typeof data.chunk_index === 'number'
+            typeof data.chunk_index ===
+            'number'
               ? data.chunk_index
               : null,
 
           distance:
-            typeof data.vector_distance === 'number'
+            typeof data.vector_distance ===
+            'number'
               ? data.vector_distance
               : null,
         };
       })
-      .filter((item) => item.text);
+      .filter(
+        (item) => item.text
+      );
 
   // COSINE distance는 낮을수록 유사
   const matched =
-    searched.filter((item) => {
-      if (item.distance === null) {
-        return true;
-      }
+    searched.filter(
+      (item) => {
+        if (
+          item.distance ===
+          null
+        ) {
+          return true;
+        }
 
-      return (
-        item.distance <=
-        distanceThreshold
-      );
-    });
+        return (
+          item.distance <=
+          distanceThreshold
+        );
+      }
+    );
 
   return {
     searched,
@@ -340,7 +387,9 @@ async function retrieveKnowledge(
  * --------------------------------------------------------------------------
  */
 
-function buildContext(chunks) {
+function buildContext(
+  chunks
+) {
   if (!chunks.length) {
     return (
       '[백서 근거]\n' +
@@ -349,34 +398,46 @@ function buildContext(chunks) {
   }
 
   return chunks
-    .map((chunk, index) => {
-      const metadata = [
-        `청크 ${index + 1}`,
+    .map(
+      (chunk, index) => {
+        const metadata = [
+          `청크 ${index + 1}`,
 
-        chunk.source
-          ? `source=${chunk.source}`
-          : null,
+          chunk.source
+            ? `source=${chunk.source}`
+            : null,
 
-        chunk.chunk_index !== null
-          ? `chunk_index=${chunk.chunk_index}`
-          : null,
+          chunk.chunk_index !== null
+            ? `chunk_index=${chunk.chunk_index}`
+            : null,
 
-        chunk.distance !== null
-          ? `cosine_distance=${chunk.distance.toFixed(6)}`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(' | ');
+          chunk.distance !== null
+            ? `cosine_distance=${chunk.distance.toFixed(6)}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(' | ');
 
-      return (
-        `[${metadata}]\n` +
-        chunk.text
-      );
-    })
+        return (
+          `[${metadata}]\n` +
+          chunk.text
+        );
+      }
+    )
     .join(
       '\n\n--- 백서 청크 구분 ---\n\n'
     );
 }
+
+/**
+ * --------------------------------------------------------------------------
+ * 최종 User Prompt
+ * --------------------------------------------------------------------------
+ *
+ * System Prompt는 별도로 LLM의 system/instructions 영역에 들어가고,
+ * 이 함수에서는 RAG 결과 + 실제 사용자 질문만 구성합니다.
+ * --------------------------------------------------------------------------
+ */
 
 function buildUserPrompt(
   userQuery,
@@ -390,12 +451,6 @@ ${buildContext(retrievedChunks)}
 [사용자 질문]
 
 ${userQuery}
-
-[답변 지침]
-
-위 백서 근거를 바탕으로 질문에 답변하라.
-근거가 충분하지 않으면
-"제공된 백서에서 확인할 수 없습니다."라고 답하라.
 `.trim();
 }
 
@@ -407,6 +462,7 @@ ${userQuery}
 
 async function generateGeminiAnswer(
   prompt,
+  systemPrompt,
   geminiKey
 ) {
   const ai =
@@ -416,13 +472,15 @@ async function generateGeminiAnswer(
 
   const response =
     await ai.models.generateContent({
-      model: MODELS.gemini,
+      model:
+        MODELS.gemini,
 
-      contents: prompt,
+      contents:
+        prompt,
 
       config: {
         systemInstruction:
-          SYSTEM_PROMPT,
+          systemPrompt,
       },
     });
 
@@ -442,14 +500,11 @@ async function generateGeminiAnswer(
  * --------------------------------------------------------------------------
  * GPT-5.6 Luna 답변
  * --------------------------------------------------------------------------
- *
- * temperature 사용 안 함.
- * GPT-5.6 reasoning.effort 사용.
- * --------------------------------------------------------------------------
  */
 
 async function generateGptAnswer(
   prompt,
+  systemPrompt,
   openaiKey
 ) {
   const openai =
@@ -459,16 +514,18 @@ async function generateGptAnswer(
 
   const response =
     await openai.responses.create({
-      model: MODELS.gpt,
+      model:
+        MODELS.gpt,
 
       instructions:
-        SYSTEM_PROMPT,
+        systemPrompt,
 
       input:
         prompt,
 
       reasoning: {
-        effort: 'medium',
+        effort:
+          'medium',
       },
     });
 
@@ -490,181 +547,188 @@ async function generateGptAnswer(
  * --------------------------------------------------------------------------
  */
 
-module.exports = async (
-  req,
-  res
-) => {
-  if (req.method !== 'POST') {
-    res.setHeader(
-      'Allow',
-      'POST'
-    );
-
-    return res
-      .status(405)
-      .json({
-        error:
-          'Method not allowed',
-      });
-  }
-
-  try {
-    const body =
-      parseBody(req);
-
-    const userQuery =
-      normalizeUserQuery(
-        body.message
+module.exports =
+  async (req, res) => {
+    if (req.method !== 'POST') {
+      res.setHeader(
+        'Allow',
+        'POST'
       );
 
-    const selectedModel =
-      normalizeModel(
-        body.model
-      );
-
-    const topK =
-      normalizeTopK(
-        body.topK
-      );
-
-    const distanceThreshold =
-      normalizeDistanceThreshold(
-        body.distanceThreshold
-      );
-
-    const geminiKey =
-      process.env.GEMINI_API_KEY;
-
-    if (!geminiKey) {
       return res
-        .status(500)
+        .status(405)
         .json({
           error:
-            "GEMINI_API_KEY 환경변수가 설정되지 않았습니다.",
+            'Method not allowed',
         });
     }
 
-    if (
-      selectedModel === MODELS.gpt &&
-      !process.env.OPENAI_API_KEY
-    ) {
-      return res
-        .status(500)
-        .json({
-          error:
-            "OPENAI_API_KEY 환경변수가 설정되지 않았습니다.",
-        });
-    }
+    try {
+      const body =
+        parseBody(req);
 
-    const db =
-      getDb();
-
-    /**
-     * 1. 질문 임베딩
-     */
-    const queryVector =
-      await createQueryEmbedding(
-        userQuery,
-        geminiKey
-      );
-
-    /**
-     * 2. Firestore vector search
-     */
-    const retrieval =
-      await retrieveKnowledge(
-        db,
-        queryVector,
-        topK,
-        distanceThreshold
-      );
-
-    /**
-     * 3. RAG prompt
-     */
-    const prompt =
-      buildUserPrompt(
-        userQuery,
-        retrieval.matched
-      );
-
-    /**
-     * 4. LLM
-     */
-    let answer;
-
-    if (
-      selectedModel === MODELS.gpt
-    ) {
-      answer =
-        await generateGptAnswer(
-          prompt,
-          process.env.OPENAI_API_KEY
+      const userQuery =
+        normalizeUserQuery(
+          body.message
         );
-    } else {
-      answer =
-        await generateGeminiAnswer(
-          prompt,
+
+      const systemPrompt =
+        normalizeSystemPrompt(
+          body.systemPrompt
+        );
+
+      const selectedModel =
+        normalizeModel(
+          body.model
+        );
+
+      const topK =
+        normalizeTopK(
+          body.topK
+        );
+
+      const distanceThreshold =
+        normalizeDistanceThreshold(
+          body.distanceThreshold
+        );
+
+      const geminiKey =
+        process.env.GEMINI_API_KEY;
+
+      if (!geminiKey) {
+        return res
+          .status(500)
+          .json({
+            error:
+              "GEMINI_API_KEY 환경변수가 설정되지 않았습니다.",
+          });
+      }
+
+      if (
+        selectedModel ===
+          MODELS.gpt &&
+        !process.env.OPENAI_API_KEY
+      ) {
+        return res
+          .status(500)
+          .json({
+            error:
+              "OPENAI_API_KEY 환경변수가 설정되지 않았습니다.",
+          });
+      }
+
+      const db =
+        getDb();
+
+      /**
+       * 1. 질문 embedding
+       */
+      const queryVector =
+        await createQueryEmbedding(
+          userQuery,
           geminiKey
         );
-    }
 
-    /**
-     * 5. 결과 반환
-     */
-    return res
-      .status(200)
-      .json({
-        answer,
-
-        model:
-          selectedModel,
-
-        retrieval: {
+      /**
+       * 2. Firebase vector search
+       */
+      const retrieval =
+        await retrieveKnowledge(
+          db,
+          queryVector,
           topK,
+          distanceThreshold
+        );
 
-          distanceThreshold,
+      /**
+       * 3. RAG user prompt
+       */
+      const prompt =
+        buildUserPrompt(
+          userQuery,
+          retrieval.matched
+        );
 
-          searchedCount:
-            retrieval.searched.length,
+      /**
+       * 4. LLM
+       */
+      let answer;
 
-          matchedCount:
-            retrieval.matched.length,
+      if (
+        selectedModel ===
+        MODELS.gpt
+      ) {
+        answer =
+          await generateGptAnswer(
+            prompt,
+            systemPrompt,
+            process.env.OPENAI_API_KEY
+          );
+      } else {
+        answer =
+          await generateGeminiAnswer(
+            prompt,
+            systemPrompt,
+            geminiKey
+          );
+      }
 
-          chunks:
-            retrieval.matched.map(
-              (chunk) => ({
-                id:
-                  chunk.id,
+      /**
+       * 5. 결과 반환
+       */
+      return res
+        .status(200)
+        .json({
+          answer,
 
-                source:
-                  chunk.source,
+          model:
+            selectedModel,
 
-                chunk_index:
-                  chunk.chunk_index,
+          retrieval: {
+            topK,
 
-                distance:
-                  chunk.distance,
+            distanceThreshold,
 
-                text:
-                  chunk.text,
-              })
-            ),
-        },
-      });
+            searchedCount:
+              retrieval.searched.length,
 
-  } catch (error) {
-    console.error(
-      'RAG API Error:',
-      error
-    );
+            matchedCount:
+              retrieval.matched.length,
 
-    return res
-      .status(500)
-      .json({
-        error:
-          error?.message ||
-          '서버 내부 오류가 발생했습니다.',
-      });
-  }
-};
+            chunks:
+              retrieval.matched.map(
+                (chunk) => ({
+                  id:
+                    chunk.id,
+
+                  source:
+                    chunk.source,
+
+                  chunk_index:
+                    chunk.chunk_index,
+
+                  distance:
+                    chunk.distance,
+
+                  text:
+                    chunk.text,
+                })
+              ),
+          },
+        });
+
+    } catch (error) {
+      console.error(
+        'RAG API Error:',
+        error
+      );
+
+      return res
+        .status(500)
+        .json({
+          error:
+            error?.message ||
+            '서버 내부 오류가 발생했습니다.',
+        });
+    }
+  };
