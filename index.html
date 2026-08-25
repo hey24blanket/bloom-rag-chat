@@ -274,7 +274,7 @@
 
       width: 90%;
 
-      max-width: 550px;
+      max-width: 650px;
 
       display: flex;
 
@@ -315,7 +315,8 @@
       color: #334155;
     }
 
-    .form-group input {
+    .form-group input,
+    .form-group textarea {
       padding: 10px 12px;
 
       border:
@@ -324,6 +325,21 @@
       border-radius: 6px;
 
       font-size: 0.9rem;
+
+      outline: none;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: #2563eb;
+    }
+
+    .form-group textarea {
+      min-height: 220px;
+
+      resize: vertical;
+
+      line-height: 1.5;
     }
 
     .helper-text {
@@ -396,6 +412,7 @@
     }
 
     @media (max-width: 640px) {
+
       header h1 {
         font-size: 1rem;
       }
@@ -407,6 +424,11 @@
       .message {
         max-width: 92%;
       }
+
+      .modal-content {
+        padding: 18px;
+      }
+
     }
   </style>
 </head>
@@ -471,7 +493,9 @@
 
   </form>
 
-  <!-- 설정 모달 -->
+  <!-- =======================================================================
+       설정 모달
+       ======================================================================= -->
 
   <div
     class="modal-overlay"
@@ -497,7 +521,27 @@
 
       </div>
 
-      <!-- 모델 -->
+      <!-- 시스템 프롬프트 -->
+
+      <div class="form-group">
+
+        <label for="cfg-system-prompt">
+          시스템 프롬프트
+        </label>
+
+        <textarea
+          id="cfg-system-prompt"
+          placeholder="LLM의 역할과 답변 규칙을 입력하세요..."
+        ></textarea>
+
+        <span class="helper-text">
+          이 프롬프트는 RAG 검색 결과보다 우선하는
+          LLM의 시스템 지침으로 전달됩니다.
+        </span>
+
+      </div>
+
+      <!-- LLM -->
 
       <div class="form-group">
 
@@ -539,7 +583,7 @@
 
       <div class="form-group">
 
-        <label>
+        <label for="cfg-topk">
           검색 청크 수 (Top K)
         </label>
 
@@ -562,7 +606,7 @@
 
       <div class="form-group">
 
-        <label>
+        <label for="cfg-distance">
           검색 거리 기준 (Cosine Distance)
         </label>
 
@@ -581,7 +625,7 @@
 
       </div>
 
-      <!-- 저장 -->
+      <!-- Footer -->
 
       <div class="modal-footer">
 
@@ -654,7 +698,7 @@
 
     /**
      * ------------------------------------------------------------------------
-     * 모델 이름
+     * 모델명
      * ------------------------------------------------------------------------
      */
 
@@ -668,15 +712,40 @@
 
     /**
      * ------------------------------------------------------------------------
-     * 기본 설정
+     * 기본 시스템 프롬프트
      * ------------------------------------------------------------------------
      *
-     * temperature 없음.
+     * "서버 하드코딩"이 아니라 앱 최초 실행 시 사용할 초기값입니다.
+     * 저장 후에는 localStorage 값이 우선합니다.
      *
-     * GPT-5.6 Luna는 서버에서 reasoning.effort를 관리합니다.
+     * 사용자가 원하면 설정창에서 언제든 수정할 수 있습니다.
+     * ------------------------------------------------------------------------
+     */
+
+    const DEFAULT_SYSTEM_PROMPT = `
+너는 사주그랩 기술 백서를 근거로 답변하는 RAG 어시스턴트다.
+
+다음 규칙을 지켜라.
+
+1. 제공된 백서 근거를 가장 중요한 사실 근거로 사용한다.
+2. 백서 근거에 없는 내용을 사실처럼 만들어내지 않는다.
+3. 근거가 충분하지 않으면 "제공된 백서에서 확인할 수 없습니다."라고 답한다.
+4. 숫자, 공식, 가중치, 알고리즘, 구조에 관한 내용은 백서의 의미를 임의로 변경하지 않는다.
+5. 사용자가 질문한 내용에 직접적으로 답한다.
+6. 백서 근거와 일반적인 지식을 혼동하지 않는다.
+`.trim();
+
+    /**
+     * ------------------------------------------------------------------------
+     * 기본 설정
+     * ------------------------------------------------------------------------
      */
 
     const DEFAULT_CONFIG = {
+
+      systemPrompt:
+        DEFAULT_SYSTEM_PROMPT,
+
       model:
         'gemini-3.1-flash-lite',
 
@@ -685,6 +754,7 @@
 
       distanceThreshold:
         0.70
+
     };
 
     /**
@@ -701,9 +771,11 @@
         );
 
       if (!saved) {
+
         return {
           ...DEFAULT_CONFIG
         };
+
       }
 
       try {
@@ -712,14 +784,19 @@
           JSON.parse(saved);
 
         return {
+
           ...DEFAULT_CONFIG,
+
           ...parsed
+
         };
 
       } catch {
 
         return {
+
           ...DEFAULT_CONFIG
+
         };
 
       }
@@ -732,11 +809,15 @@
      * ------------------------------------------------------------------------
      */
 
-    function saveConfig(config) {
+    function saveConfig(
+      config
+    ) {
 
       localStorage.setItem(
         'rag_config',
-        JSON.stringify(config)
+        JSON.stringify(
+          config
+        )
       );
 
     }
@@ -759,7 +840,7 @@
 
     /**
      * ------------------------------------------------------------------------
-     * 설정 UI 로드
+     * 설정창 UI 로드
      * ------------------------------------------------------------------------
      */
 
@@ -767,6 +848,11 @@
 
       const config =
         getConfig();
+
+      document.getElementById(
+        'cfg-system-prompt'
+      ).value =
+        config.systemPrompt || '';
 
       document.getElementById(
         'cfg-topk'
@@ -784,8 +870,10 @@
         );
 
       if (targetRadio) {
+
         targetRadio.checked =
           true;
+
       }
 
       updateHeaderBadge(
@@ -831,7 +919,7 @@
 
     /**
      * ------------------------------------------------------------------------
-     * 검색 근거 추가
+     * Retrieval 정보 표시
      * ------------------------------------------------------------------------
      */
 
@@ -891,7 +979,10 @@
         'sources';
 
       retrieval.chunks.forEach(
-        (chunk, index) => {
+        (
+          chunk,
+          index
+        ) => {
 
           const item =
             document.createElement(
@@ -913,8 +1004,10 @@
               : 'n/a';
 
           const chunkIndex =
-            chunk.chunk_index !== null &&
-            chunk.chunk_index !== undefined
+            chunk.chunk_index !==
+              null &&
+            chunk.chunk_index !==
+              undefined
               ? ` · chunk ${chunk.chunk_index}`
               : '';
 
@@ -968,7 +1061,9 @@
 
     inputForm.addEventListener(
       'submit',
-      async (event) => {
+      async (
+        event
+      ) => {
 
         event.preventDefault();
 
@@ -981,6 +1076,19 @@
 
         const config =
           getConfig();
+
+        if (
+          !config.systemPrompt ||
+          !config.systemPrompt.trim()
+        ) {
+
+          alert(
+            '먼저 ⚙️ 설정에서 시스템 프롬프트를 입력하고 저장해주세요.'
+          );
+
+          return;
+
+        }
 
         appendMessage(
           'user',
@@ -1015,8 +1123,12 @@
 
                 body:
                   JSON.stringify({
+
                     message:
                       query,
+
+                    systemPrompt:
+                      config.systemPrompt,
 
                     model:
                       config.model,
@@ -1026,6 +1138,7 @@
 
                     distanceThreshold:
                       config.distanceThreshold
+
                   })
               }
             );
@@ -1066,7 +1179,9 @@
             data
           );
 
-        } catch (error) {
+        } catch (
+          error
+        ) {
 
           loadingMessage.innerText =
             '❌ 오류가 발생했습니다: ' +
@@ -1125,16 +1240,19 @@
 
     /**
      * ------------------------------------------------------------------------
-     * 바깥 클릭으로 닫기
+     * 바깥 영역 클릭 닫기
      * ------------------------------------------------------------------------
      */
 
     modal.addEventListener(
       'click',
-      (event) => {
+      (
+        event
+      ) => {
 
         if (
-          event.target === modal
+          event.target ===
+          modal
         ) {
 
           modal.classList.remove(
@@ -1156,6 +1274,37 @@
       'click',
       () => {
 
+        const systemPrompt =
+          document
+            .getElementById(
+              'cfg-system-prompt'
+            )
+            .value
+            .trim();
+
+        if (!systemPrompt) {
+
+          alert(
+            '시스템 프롬프트를 입력해주세요.'
+          );
+
+          return;
+
+        }
+
+        if (
+          systemPrompt.length >
+          30000
+        ) {
+
+          alert(
+            '시스템 프롬프트는 30,000자 이하로 입력해주세요.'
+          );
+
+          return;
+
+        }
+
         const selectedRadio =
           document.querySelector(
             'input[name="cfg-model"]:checked'
@@ -1163,27 +1312,35 @@
 
         const topK =
           parseInt(
-            document.getElementById(
-              'cfg-topk'
-            ).value,
+            document
+              .getElementById(
+                'cfg-topk'
+              )
+              .value,
             10
           );
 
         const distanceThreshold =
           parseFloat(
-            document.getElementById(
-              'cfg-distance'
-            ).value
+            document
+              .getElementById(
+                'cfg-distance'
+              )
+              .value
           );
 
         const newConfig = {
+
+          systemPrompt,
 
           model:
             selectedRadio?.value ||
             DEFAULT_CONFIG.model,
 
           topK:
-            Number.isFinite(topK) &&
+            Number.isFinite(
+              topK
+            ) &&
             topK >= 1 &&
             topK <= 10
               ? topK
