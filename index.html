@@ -247,54 +247,15 @@
     }
 
     /* =========================================================
-       TIMING
+       RESPONSE TIMER
        ========================================================= */
-
-    .timing-box {
-      margin-top: 10px;
-
-      padding-top: 9px;
-
-      border-top:
-        1px solid var(--border);
-
-      font-size: 0.75rem;
-
-      color: #475569;
-
-      font-variant-numeric: tabular-nums;
-
-      line-height: 1.65;
-    }
-
-    .timing-row {
-      display: flex;
-
-      justify-content: space-between;
-
-      gap: 20px;
-
-      min-width: 190px;
-    }
-
-    .timing-label {
-      color: #64748b;
-    }
-
-    .timing-value {
-      font-weight: 700;
-
-      color: #334155;
-
-      white-space: nowrap;
-    }
 
     .response-timer {
       display: inline-block;
 
       margin-top: 8px;
 
-      padding: 4px 8px;
+      padding: 3px 7px;
 
       border-radius: 999px;
 
@@ -302,12 +263,14 @@
 
       color: #1d4ed8;
 
-      font-size: 0.72rem;
+      font-size: 0.70rem;
 
       font-variant-numeric: tabular-nums;
 
       border:
         1px solid #dbeafe;
+
+      white-space: nowrap;
     }
 
     .response-timer.loading {
@@ -321,9 +284,58 @@
     .response-timer.error {
       background: #fef2f2;
 
-      color: var(--danger);
+      color: #dc2626;
 
       border-color: #fecaca;
+    }
+
+    /* =========================================================
+       COMPACT TIMING
+       ========================================================= */
+
+    .timing-box {
+      margin-top: 6px;
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      align-items: center;
+
+      gap: 3px 8px;
+
+      font-size: 0.70rem;
+
+      line-height: 1.4;
+
+      color: #64748b;
+
+      font-variant-numeric:
+        tabular-nums;
+    }
+
+    .timing-item {
+      display: inline-flex;
+
+      align-items: center;
+
+      white-space: nowrap;
+    }
+
+    .timing-label {
+      color: #94a3b8;
+
+      margin-right: 3px;
+    }
+
+    .timing-value {
+      color: #475569;
+
+      font-weight: 600;
+    }
+
+    .timing-separator {
+      color: #cbd5e1;
     }
 
     /* =========================================================
@@ -334,6 +346,7 @@
       margin-top: 8px;
 
       display: flex;
+
       flex-direction: column;
 
       gap: 6px;
@@ -399,6 +412,7 @@
       background: var(--white);
 
       display: flex;
+
       align-items: center;
 
       gap: 10px;
@@ -519,6 +533,7 @@
       border-radius: 14px;
 
       display: flex;
+
       flex-direction: column;
 
       gap: 18px;
@@ -819,10 +834,10 @@
         width: 100%;
       }
 
-      .timing-row {
-        min-width: 180px;
+      .timing-box {
+        gap: 3px 7px;
 
-        gap: 10px;
+        font-size: 0.67rem;
       }
 
     }
@@ -856,6 +871,10 @@
       .modal-content {
         padding:
           15px;
+      }
+
+      .timing-box {
+        font-size: 0.65rem;
       }
 
     }
@@ -1201,7 +1220,7 @@
     };
 
     /* =========================================================
-       CONFIG
+       CONFIG READ
        ========================================================= */
 
     function getConfig() {
@@ -1244,12 +1263,17 @@
 
     }
 
+    /* =========================================================
+       CONFIG SAVE
+       ========================================================= */
+
     function saveConfig(
       config
     ) {
 
       localStorage.setItem(
         'rag_config',
+
         JSON.stringify(
           config
         )
@@ -1258,7 +1282,7 @@
     }
 
     /* =========================================================
-       HEADER
+       HEADER MODEL
        ========================================================= */
 
     function updateHeaderBadge(
@@ -1272,7 +1296,7 @@
     }
 
     /* =========================================================
-       SETTINGS UI
+       SETTINGS LOAD
        ========================================================= */
 
     function loadSettingsToUI() {
@@ -1314,7 +1338,7 @@
     }
 
     /* =========================================================
-       MESSAGE
+       ADD MESSAGE
        ========================================================= */
 
     function appendMessage(
@@ -1467,7 +1491,7 @@
     }
 
     /* =========================================================
-       SERVER TIMING
+       COMPACT TIMING INFO
        ========================================================= */
 
     function appendTimingInfo(
@@ -1484,13 +1508,88 @@
       timingBox.className =
         'timing-box';
 
-      /*
-       * 서버가 timing 정보를 반환하면
-       * 세부 항목을 표시합니다.
-       *
-       * 현재 api/chat.js가 아직 반환하지 않는 경우에는
-       * 전체 시간만 표시합니다.
-       */
+      const addItem = (
+        label,
+        milliseconds
+      ) => {
+
+        if (
+          typeof milliseconds !==
+            'number' ||
+          !Number.isFinite(
+            milliseconds
+          )
+        ) {
+
+          return;
+
+        }
+
+        const item =
+          document.createElement(
+            'span'
+          );
+
+        item.className =
+          'timing-item';
+
+        const labelElement =
+          document.createElement(
+            'span'
+          );
+
+        labelElement.className =
+          'timing-label';
+
+        labelElement.innerText =
+          label;
+
+        const valueElement =
+          document.createElement(
+            'span'
+          );
+
+        valueElement.className =
+          'timing-value';
+
+        valueElement.innerText =
+          `${(
+            milliseconds / 1000
+          ).toFixed(2)}초`;
+
+        item.appendChild(
+          labelElement
+        );
+
+        item.appendChild(
+          valueElement
+        );
+
+        timingBox.appendChild(
+          item
+        );
+
+      };
+
+      const addSeparator =
+        () => {
+
+          const separator =
+            document.createElement(
+              'span'
+            );
+
+          separator.className =
+            'timing-separator';
+
+          separator.innerText =
+            '·';
+
+          timingBox.appendChild(
+            separator
+          );
+
+        };
 
       if (
         serverTiming &&
@@ -1498,137 +1597,54 @@
           'object'
       ) {
 
-        const embedding =
+        addItem(
+          '임베딩 ',
           Number(
             serverTiming.embeddingMs
-          );
+          )
+        );
 
-        const retrieval =
+        addSeparator();
+
+        addItem(
+          'Firebase ',
           Number(
             serverTiming.retrievalMs
-          );
+          )
+        );
 
-        const llm =
+        addSeparator();
+
+        addItem(
+          'LLM ',
           Number(
             serverTiming.llmMs
-          );
-
-        const serverTotal =
-          Number(
-            serverTiming.totalMs
-          );
-
-        if (
-          Number.isFinite(
-            embedding
           )
-        ) {
+        );
 
-          timingBox.insertAdjacentHTML(
-            'beforeend',
-
-            `
-              <div class="timing-row">
-                <span class="timing-label">
-                  임베딩
-                </span>
-
-                <span class="timing-value">
-                  ${(embedding / 1000).toFixed(2)}초
-                </span>
-              </div>
-            `
-          );
-
-        }
-
-        if (
-          Number.isFinite(
-            retrieval
-          )
-        ) {
-
-          timingBox.insertAdjacentHTML(
-            'beforeend',
-
-            `
-              <div class="timing-row">
-                <span class="timing-label">
-                  Firebase RAG
-                </span>
-
-                <span class="timing-value">
-                  ${(retrieval / 1000).toFixed(2)}초
-                </span>
-              </div>
-            `
-          );
-
-        }
-
-        if (
-          Number.isFinite(
-            llm
-          )
-        ) {
-
-          timingBox.insertAdjacentHTML(
-            'beforeend',
-
-            `
-              <div class="timing-row">
-                <span class="timing-label">
-                  LLM 생성
-                </span>
-
-                <span class="timing-value">
-                  ${(llm / 1000).toFixed(2)}초
-                </span>
-              </div>
-            `
-          );
-
-        }
+        addSeparator();
 
         const total =
           Number.isFinite(
-            serverTotal
+            Number(
+              serverTiming.totalMs
+            )
           )
-            ? serverTotal
+            ? Number(
+                serverTiming.totalMs
+              )
             : clientElapsed;
 
-        timingBox.insertAdjacentHTML(
-          'beforeend',
-
-          `
-            <div class="timing-row">
-              <span class="timing-label">
-                전체
-              </span>
-
-              <span class="timing-value">
-                ${(total / 1000).toFixed(2)}초
-              </span>
-            </div>
-          `
+        addItem(
+          '전체 ',
+          total
         );
 
       } else {
 
-        timingBox.insertAdjacentHTML(
-          'beforeend',
-
-          `
-            <div class="timing-row">
-              <span class="timing-label">
-                전체 응답
-              </span>
-
-              <span class="timing-value">
-                ${(clientElapsed / 1000).toFixed(2)}초
-              </span>
-            </div>
-          `
+        addItem(
+          '전체 ',
+          clientElapsed
         );
 
       }
@@ -1812,7 +1828,7 @@
         }
 
         /* -------------------------------------------------------
-           사용자 메시지
+           USER MESSAGE
            ------------------------------------------------------- */
 
         appendMessage(
@@ -1827,7 +1843,7 @@
           true;
 
         /* -------------------------------------------------------
-           로딩 메시지
+           LOADING MESSAGE
            ------------------------------------------------------- */
 
         const loadingMessage =
@@ -1837,7 +1853,7 @@
           );
 
         /* -------------------------------------------------------
-           전체 클라이언트 타이머 시작
+           CLIENT TIMER
            ------------------------------------------------------- */
 
         const clientStart =
@@ -1851,7 +1867,7 @@
         try {
 
           /* -----------------------------------------------------
-             API 요청
+             API REQUEST
              ----------------------------------------------------- */
 
           const response =
@@ -1891,7 +1907,7 @@
             );
 
           /* -----------------------------------------------------
-             전체 클라이언트 시간
+             CLIENT TOTAL
              ----------------------------------------------------- */
 
           const clientElapsed =
@@ -1926,13 +1942,13 @@
           }
 
           /* -----------------------------------------------------
-             타이머 종료
+             STOP TIMER
              ----------------------------------------------------- */
 
           timer.stop();
 
           /* -----------------------------------------------------
-             답변으로 교체
+             FINAL ANSWER
              ----------------------------------------------------- */
 
           loadingMessage.innerText =
@@ -1940,14 +1956,15 @@
             '답변을 가져올 수 없습니다.';
 
           /*
-           * 타이머는 답변에 붙여서 영구적으로 유지합니다.
+           * 응답 타이머를 답변에 다시 붙입니다.
+           * 답변 완료 후에도 사라지지 않습니다.
            */
           loadingMessage.appendChild(
             timer.element
           );
 
           /* -----------------------------------------------------
-             3단계 처리 시간 표시
+             COMPACT TIMING
              ----------------------------------------------------- */
 
           appendTimingInfo(
@@ -1957,7 +1974,7 @@
           );
 
           /* -----------------------------------------------------
-             RAG 근거
+             RETRIEVAL
              ----------------------------------------------------- */
 
           appendRetrievalInfo(
@@ -1983,7 +2000,7 @@
             );
 
           /*
-           * 오류가 나도 타이머 유지
+           * 오류가 발생해도 타이머 유지
            */
           loadingMessage.appendChild(
             timer.element
@@ -2070,7 +2087,7 @@
     );
 
     /* =========================================================
-       ESC
+       ESC KEY
        ========================================================= */
 
     document.addEventListener(
@@ -2204,7 +2221,7 @@
     );
 
     /* =========================================================
-       INIT
+       INITIALIZE
        ========================================================= */
 
     loadSettingsToUI();
