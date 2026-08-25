@@ -4,518 +4,1201 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Bloom Chat — RAG Chatbot</title>
-  <meta name="description" content="A lightweight personal RAG chatbot UI." />
+  <meta
+    name="description"
+    content="A lightweight personal RAG chatbot UI."
+  />
+
   <style>
-    :root{
-      --bg:#f7f9fc;
-      --panel:rgba(255,255,255,.82);
-      --panel-solid:#ffffff;
-      --text:#162033;
-      --muted:#718096;
-      --line:#e8edf4;
-      --accent:#7c5cff;
-      --accent-2:#20c997;
-      --accent-soft:#efeaff;
-      --user:#ede9fe;
-      --assistant:#ffffff;
-      --shadow:0 18px 50px rgba(39,50,80,.10);
-      --shadow-soft:0 8px 24px rgba(39,50,80,.07);
-      --radius:22px;
+    :root {
+      --bg: #f7f9fc;
+      --panel: rgba(255, 255, 255, 0.82);
+      --panel-solid: #ffffff;
+      --text: #162033;
+      --muted: #718096;
+      --line: #e8edf4;
+      --accent: #7c5cff;
+      --accent-2: #20c997;
+      --accent-soft: #efeaff;
+      --user: #ede9fe;
+      --assistant: #ffffff;
+      --shadow: 0 18px 50px rgba(39, 50, 80, 0.1);
+      --shadow-soft: 0 8px 24px rgba(39, 50, 80, 0.07);
+      --radius: 22px;
     }
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
       background:
-        radial-gradient(circle at 10% 0%, rgba(124,92,255,.12), transparent 28%),
-        radial-gradient(circle at 90% 10%, rgba(32,201,151,.11), transparent 24%),
+        radial-gradient(
+          circle at 10% 0%,
+          rgba(124, 92, 255, 0.12),
+          transparent 28%
+        ),
+        radial-gradient(
+          circle at 90% 10%,
+          rgba(32, 201, 151, 0.11),
+          transparent 24%
+        ),
         var(--bg);
-      color:var(--text);
-      overflow:hidden;
+
+      color: var(--text);
+      overflow: hidden;
     }
 
-    button, textarea{font:inherit}
-    button{cursor:pointer}
-
-    .app{
-      height:100%;
-      display:grid;
-      grid-template-columns:280px 1fr;
+    button,
+    textarea {
+      font: inherit;
     }
 
-    /* Sidebar */
-    .sidebar{
-      padding:18px;
-      border-right:1px solid rgba(220,228,240,.85);
-      background:rgba(255,255,255,.64);
-      backdrop-filter:blur(16px);
-      display:flex;
-      flex-direction:column;
-      min-width:0;
+    button {
+      cursor: pointer;
     }
 
-    .brand{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      padding:8px 8px 18px;
+    .app {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 280px 1fr;
     }
 
-    .brand-mark{
-      width:40px;
-      height:40px;
-      border-radius:14px;
-      display:grid;
-      place-items:center;
-      color:white;
-      font-weight:800;
-      background:linear-gradient(135deg,#7c5cff,#20c997);
-      box-shadow:0 10px 22px rgba(124,92,255,.22);
+    /* =========================
+       Sidebar
+    ========================= */
+
+    .sidebar {
+      padding: 18px;
+      border-right: 1px solid rgba(220, 228, 240, 0.85);
+      background: rgba(255, 255, 255, 0.64);
+      backdrop-filter: blur(16px);
+
+      display: flex;
+      flex-direction: column;
+
+      min-width: 0;
     }
 
-    .brand-copy strong{display:block;font-size:15px}
-    .brand-copy span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
-
-    .new-chat{
-      border:0;
-      border-radius:15px;
-      padding:13px 14px;
-      background:var(--text);
-      color:white;
-      font-weight:700;
-      box-shadow:var(--shadow-soft);
-      margin-bottom:14px;
-      transition:.2s ease;
-    }
-    .new-chat:hover{transform:translateY(-1px);opacity:.95}
-
-    .side-label{
-      padding:4px 8px 8px;
-      color:#97a2b4;
-      font-size:11px;
-      font-weight:700;
-      letter-spacing:.08em;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 8px 18px;
     }
 
-    .chat-list{
-      display:flex;
-      flex-direction:column;
-      gap:5px;
-      overflow:auto;
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+
+      display: grid;
+      place-items: center;
+
+      color: white;
+      font-weight: 800;
+
+      background: linear-gradient(
+        135deg,
+        #7c5cff,
+        #20c997
+      );
+
+      box-shadow:
+        0 10px 22px rgba(124, 92, 255, 0.22);
     }
 
-    .chat-item{
-      display:flex;
-      gap:10px;
-      padding:10px 11px;
-      border-radius:13px;
-      border:1px solid transparent;
-      color:#40506a;
-      transition:.18s ease;
-    }
-    .chat-item:hover{background:#fff;border-color:var(--line)}
-    .chat-item.active{background:var(--accent-soft);color:#4c3fb4}
-    .chat-icon{
-      width:26px;height:26px;border-radius:9px;display:grid;place-items:center;
-      background:#eef2f7;font-size:12px;flex:0 0 auto;
-    }
-    .chat-item.active .chat-icon{background:white}
-
-    .chat-title{font-size:12px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .chat-time{font-size:10px;color:#9aa4b5;margin-top:3px}
-
-    .sidebar-footer{
-      margin-top:auto;
-      padding-top:14px;
-      border-top:1px solid var(--line);
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:8px;
+    .brand-copy strong {
+      display: block;
+      font-size: 15px;
     }
 
-    .status{
-      display:flex;align-items:center;gap:7px;font-size:11px;color:#637085;
-    }
-    .dot{width:7px;height:7px;border-radius:50%;background:#20c997;box-shadow:0 0 0 4px rgba(32,201,151,.12)}
-
-    .tiny-btn{
-      border:1px solid var(--line);
-      background:white;
-      color:#68758a;
-      border-radius:11px;
-      padding:7px 9px;
-      font-size:10px;
+    .brand-copy span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      margin-top: 2px;
     }
 
-    /* Main */
-    .main{
-      min-width:0;
-      display:flex;
-      flex-direction:column;
-      height:100%;
+    .new-chat {
+      border: 0;
+      border-radius: 15px;
+
+      padding: 13px 14px;
+
+      background: var(--text);
+      color: white;
+
+      font-weight: 700;
+
+      box-shadow: var(--shadow-soft);
+
+      margin-bottom: 14px;
+
+      transition: 0.2s ease;
     }
 
-    .topbar{
-      height:74px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 28px;
-      border-bottom:1px solid rgba(220,228,240,.75);
-      background:rgba(255,255,255,.56);
-      backdrop-filter:blur(16px);
+    .new-chat:hover {
+      transform: translateY(-1px);
+      opacity: 0.95;
     }
 
-    .conversation-name{
-      display:flex;
-      align-items:center;
-      gap:10px;
-    }
-    .conversation-name strong{font-size:15px}
-    .conversation-name .live{
-      font-size:10px;
-      padding:4px 7px;
-      border-radius:999px;
-      background:#eefbf7;
-      color:#13956f;
-      font-weight:700;
+    .side-label {
+      padding: 4px 8px 8px;
+
+      color: #97a2b4;
+      font-size: 11px;
+
+      font-weight: 700;
+      letter-spacing: 0.08em;
     }
 
-    .model-wrap{
-      position:relative;
+    .chat-list {
+      display: flex;
+      flex-direction: column;
+
+      gap: 5px;
+      overflow: auto;
     }
 
-    .model-button{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.94);
-      padding:9px 11px;
-      border-radius:13px;
-      color:#4d5c73;
-      font-size:12px;
-      font-weight:700;
-      box-shadow:0 4px 12px rgba(50,60,90,.04);
+    .chat-item {
+      display: flex;
+      gap: 10px;
+
+      padding: 10px 11px;
+
+      border-radius: 13px;
+      border: 1px solid transparent;
+
+      color: #40506a;
+
+      transition: 0.18s ease;
     }
 
-    .model-pill{
-      width:8px;height:8px;border-radius:50%;
-      background:var(--accent);
-      box-shadow:0 0 0 4px var(--accent-soft);
+    .chat-item:hover {
+      background: #fff;
+      border-color: var(--line);
     }
 
-    .model-menu{
-      position:absolute;
-      right:0;
-      top:47px;
-      width:220px;
-      background:white;
-      border:1px solid var(--line);
-      border-radius:16px;
-      box-shadow:var(--shadow);
-      padding:8px;
-      display:none;
-      z-index:10;
-    }
-    .model-menu.open{display:block}
-    .model-option{
-      width:100%;
-      display:flex;
-      align-items:flex-start;
-      gap:10px;
-      text-align:left;
-      border:0;
-      background:transparent;
-      padding:10px;
-      border-radius:11px;
-      color:#3e4a60;
-    }
-    .model-option:hover{background:#f7f8fb}
-    .model-option.selected{background:#f2efff}
-    .model-name{font-size:12px;font-weight:750}
-    .model-meta{font-size:10px;color:#929bad;margin-top:2px}
-    .model-bullet{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:0 0 auto}
-
-    .messages{
-      flex:1;
-      overflow:auto;
-      padding:26px min(7vw,100px) 20px;
-      scroll-behavior:smooth;
+    .chat-item.active {
+      background: var(--accent-soft);
+      color: #4c3fb4;
     }
 
-    .welcome{
-      max-width:760px;
-      margin:5vh auto 26px;
-      text-align:center;
+    .chat-icon {
+      width: 26px;
+      height: 26px;
+
+      border-radius: 9px;
+
+      display: grid;
+      place-items: center;
+
+      background: #eef2f7;
+      font-size: 12px;
+
+      flex: 0 0 auto;
     }
 
-    .welcome-orb{
-      width:74px;height:74px;margin:0 auto 18px;border-radius:25px;
-      display:grid;place-items:center;
-      font-size:30px;
-      background:linear-gradient(135deg,#efeaff,#e8fbf4);
-      box-shadow:0 16px 30px rgba(124,92,255,.12);
+    .chat-item.active .chat-icon {
+      background: white;
     }
 
-    .welcome h1{
-      margin:0;
-      font-size:28px;
-      letter-spacing:-.03em;
-    }
-    .welcome p{
-      margin:10px auto 0;
-      color:var(--muted);
-      font-size:13px;
-      line-height:1.7;
-      max-width:580px;
+    .chat-title {
+      font-size: 12px;
+      font-weight: 650;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .quick-grid{
-      margin-top:20px;
-      display:grid;
-      grid-template-columns:repeat(2, minmax(0,1fr));
-      gap:10px;
+    .chat-time {
+      font-size: 10px;
+      color: #9aa4b5;
+      margin-top: 3px;
     }
 
-    .quick{
-      border:1px solid var(--line);
-      background:rgba(255,255,255,.78);
-      padding:13px 14px;
-      border-radius:15px;
-      text-align:left;
-      box-shadow:var(--shadow-soft);
-      color:#435168;
-      transition:.2s ease;
-    }
-    .quick:hover{transform:translateY(-2px);border-color:#ddd7ff}
-    .quick strong{display:block;font-size:11px}
-    .quick span{display:block;font-size:10px;color:#8b95a7;margin-top:3px}
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 14px;
 
-    .message-row{
-      display:flex;
-      margin:15px 0;
-    }
-    .message-row.user{justify-content:flex-end}
-    .bubble{
-      max-width:min(760px,86%);
-      border-radius:18px;
-      padding:13px 15px;
-      line-height:1.7;
-      font-size:13px;
-      white-space:pre-wrap;
-      box-shadow:var(--shadow-soft);
-    }
-    .message-row.assistant .bubble{
-      background:var(--assistant);
-      border:1px solid var(--line);
-    }
-    .message-row.user .bubble{
-      background:var(--user);
-      color:#433a74;
-      border:1px solid #ddd6fe;
+      border-top: 1px solid var(--line);
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      gap: 8px;
     }
 
-    .composer-wrap{
-      padding:0 24px 20px;
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+
+      font-size: 11px;
+      color: #637085;
     }
 
-    .composer{
-      max-width:980px;
-      margin:0 auto;
-      background:rgba(255,255,255,.86);
-      border:1px solid var(--line);
-      border-radius:22px;
-      box-shadow:var(--shadow);
-      padding:10px;
-      backdrop-filter:blur(16px);
+    .dot {
+      width: 7px;
+      height: 7px;
+
+      border-radius: 50%;
+
+      background: #20c997;
+
+      box-shadow:
+        0 0 0 4px rgba(32, 201, 151, 0.12);
     }
 
-    .composer textarea{
-      width:100%;
-      min-height:52px;
-      max-height:160px;
-      resize:none;
-      border:0;
-      outline:0;
-      padding:10px 12px 4px;
-      background:transparent;
-      color:var(--text);
-      font-size:13px;
-      line-height:1.6;
-    }
-    .composer textarea::placeholder{color:#a1aaba}
+    .tiny-btn {
+      border: 1px solid var(--line);
 
-    .composer-bottom{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:4px 4px 2px;
-      gap:8px;
+      background: white;
+      color: #68758a;
+
+      border-radius: 11px;
+
+      padding: 7px 9px;
+
+      font-size: 10px;
     }
 
-    .composer-hint{font-size:10px;color:#9aa3b3}
-    .send-btn{
-      width:38px;height:38px;border:0;border-radius:13px;
-      color:white;
-      background:linear-gradient(135deg,#7c5cff,#6750df);
-      box-shadow:0 8px 18px rgba(103,80,223,.25);
-      font-size:17px;
-      transition:.2s ease;
-    }
-    .send-btn:hover{transform:translateY(-1px) scale(1.02)}
-    .send-btn:disabled{opacity:.45;transform:none;cursor:not-allowed}
+    /* =========================
+       Main
+    ========================= */
 
-    .typing{
-      display:flex;
-      gap:4px;
-      align-items:center;
-      padding:6px 0 2px;
-    }
-    .typing span{
-      width:6px;height:6px;border-radius:50%;background:#aab3c1;
-      animation:bounce 1.2s infinite;
-    }
-    .typing span:nth-child(2){animation-delay:.12s}
-    .typing span:nth-child(3){animation-delay:.24s}
-    @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+    .main {
+      min-width: 0;
 
-    @media (max-width: 860px){
-      .app{grid-template-columns:1fr}
-      .sidebar{
-        display:none;
+      display: flex;
+      flex-direction: column;
+
+      height: 100%;
+    }
+
+    .topbar {
+      height: 74px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding: 0 28px;
+
+      border-bottom:
+        1px solid rgba(220, 228, 240, 0.75);
+
+      background: rgba(255, 255, 255, 0.56);
+
+      backdrop-filter: blur(16px);
+    }
+
+    .conversation-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .conversation-name strong {
+      font-size: 15px;
+    }
+
+    .conversation-name .live {
+      font-size: 10px;
+
+      padding: 4px 7px;
+
+      border-radius: 999px;
+
+      background: #eefbf7;
+      color: #13956f;
+
+      font-weight: 700;
+    }
+
+    /* =========================
+       Model selector
+    ========================= */
+
+    .model-wrap {
+      position: relative;
+    }
+
+    .model-button {
+      display: flex;
+      align-items: center;
+
+      gap: 8px;
+
+      border: 1px solid var(--line);
+
+      background: rgba(255, 255, 255, 0.94);
+
+      padding: 9px 11px;
+
+      border-radius: 13px;
+
+      color: #4d5c73;
+
+      font-size: 12px;
+      font-weight: 700;
+
+      box-shadow:
+        0 4px 12px rgba(50, 60, 90, 0.04);
+    }
+
+    .model-pill {
+      width: 8px;
+      height: 8px;
+
+      border-radius: 50%;
+
+      background: var(--accent);
+
+      box-shadow:
+        0 0 0 4px var(--accent-soft);
+    }
+
+    .model-menu {
+      position: absolute;
+
+      right: 0;
+      top: 47px;
+
+      width: 240px;
+
+      background: white;
+
+      border: 1px solid var(--line);
+
+      border-radius: 16px;
+
+      box-shadow: var(--shadow);
+
+      padding: 8px;
+
+      display: none;
+
+      z-index: 100;
+    }
+
+    .model-menu.open {
+      display: block;
+    }
+
+    .model-option {
+      width: 100%;
+
+      display: flex;
+      align-items: flex-start;
+
+      gap: 10px;
+
+      text-align: left;
+
+      border: 0;
+
+      background: transparent;
+
+      padding: 10px;
+
+      border-radius: 11px;
+
+      color: #3e4a60;
+    }
+
+    .model-option:hover {
+      background: #f7f8fb;
+    }
+
+    .model-option.selected {
+      background: #f2efff;
+    }
+
+    .model-name {
+      display: block;
+
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .model-meta {
+      display: block;
+
+      font-size: 10px;
+
+      color: #929bad;
+
+      margin-top: 2px;
+    }
+
+    .model-bullet {
+      width: 8px;
+      height: 8px;
+
+      border-radius: 50%;
+
+      margin-top: 5px;
+
+      flex: 0 0 auto;
+    }
+
+    /* =========================
+       Messages
+    ========================= */
+
+    .messages {
+      flex: 1;
+
+      overflow: auto;
+
+      padding:
+        26px
+        min(7vw, 100px)
+        20px;
+
+      scroll-behavior: smooth;
+    }
+
+    .welcome {
+      max-width: 760px;
+
+      margin: 5vh auto 26px;
+
+      text-align: center;
+    }
+
+    .welcome-orb {
+      width: 74px;
+      height: 74px;
+
+      margin: 0 auto 18px;
+
+      border-radius: 25px;
+
+      display: grid;
+      place-items: center;
+
+      font-size: 30px;
+
+      background:
+        linear-gradient(
+          135deg,
+          #efeaff,
+          #e8fbf4
+        );
+
+      box-shadow:
+        0 16px 30px
+        rgba(124, 92, 255, 0.12);
+    }
+
+    .welcome h1 {
+      margin: 0;
+
+      font-size: 28px;
+
+      letter-spacing: -0.03em;
+    }
+
+    .welcome p {
+      margin: 10px auto 0;
+
+      color: var(--muted);
+
+      font-size: 13px;
+
+      line-height: 1.7;
+
+      max-width: 580px;
+    }
+
+    .quick-grid {
+      margin-top: 20px;
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+      gap: 10px;
+    }
+
+    .quick {
+      border: 1px solid var(--line);
+
+      background: rgba(255, 255, 255, 0.78);
+
+      padding: 13px 14px;
+
+      border-radius: 15px;
+
+      text-align: left;
+
+      box-shadow: var(--shadow-soft);
+
+      color: #435168;
+
+      transition: 0.2s ease;
+    }
+
+    .quick:hover {
+      transform: translateY(-2px);
+      border-color: #ddd7ff;
+    }
+
+    .quick strong {
+      display: block;
+      font-size: 11px;
+    }
+
+    .quick span {
+      display: block;
+
+      font-size: 10px;
+
+      color: #8b95a7;
+
+      margin-top: 3px;
+    }
+
+    .message-row {
+      display: flex;
+
+      margin: 15px 0;
+    }
+
+    .message-row.user {
+      justify-content: flex-end;
+    }
+
+    .bubble {
+      max-width:
+        min(760px, 86%);
+
+      border-radius: 18px;
+
+      padding: 13px 15px;
+
+      line-height: 1.7;
+
+      font-size: 13px;
+
+      white-space: pre-wrap;
+
+      box-shadow: var(--shadow-soft);
+    }
+
+    .message-row.assistant .bubble {
+      background: var(--assistant);
+
+      border: 1px solid var(--line);
+    }
+
+    .message-row.user .bubble {
+      background: var(--user);
+
+      color: #433a74;
+
+      border: 1px solid #ddd6fe;
+    }
+
+    /* =========================
+       Composer
+    ========================= */
+
+    .composer-wrap {
+      padding: 0 24px 20px;
+    }
+
+    .composer {
+      max-width: 980px;
+
+      margin: 0 auto;
+
+      background: rgba(255, 255, 255, 0.86);
+
+      border: 1px solid var(--line);
+
+      border-radius: 22px;
+
+      box-shadow: var(--shadow);
+
+      padding: 10px;
+
+      backdrop-filter: blur(16px);
+    }
+
+    .composer textarea {
+      width: 100%;
+
+      min-height: 52px;
+      max-height: 160px;
+
+      resize: none;
+
+      border: 0;
+
+      outline: 0;
+
+      padding: 10px 12px 4px;
+
+      background: transparent;
+
+      color: var(--text);
+
+      font-size: 13px;
+
+      line-height: 1.6;
+    }
+
+    .composer textarea::placeholder {
+      color: #a1aaba;
+    }
+
+    .composer-bottom {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      padding: 4px 4px 2px;
+
+      gap: 8px;
+    }
+
+    .composer-hint {
+      font-size: 10px;
+      color: #9aa3b3;
+    }
+
+    .send-btn {
+      width: 38px;
+      height: 38px;
+
+      border: 0;
+
+      border-radius: 13px;
+
+      color: white;
+
+      background:
+        linear-gradient(
+          135deg,
+          #7c5cff,
+          #6750df
+        );
+
+      box-shadow:
+        0 8px 18px
+        rgba(103, 80, 223, 0.25);
+
+      font-size: 17px;
+
+      transition: 0.2s ease;
+    }
+
+    .send-btn:hover {
+      transform:
+        translateY(-1px)
+        scale(1.02);
+    }
+
+    .send-btn:disabled {
+      opacity: 0.45;
+
+      transform: none;
+
+      cursor: not-allowed;
+    }
+
+    /* =========================
+       Typing
+    ========================= */
+
+    .typing {
+      display: flex;
+
+      gap: 4px;
+
+      align-items: center;
+
+      padding: 6px 0 2px;
+    }
+
+    .typing span {
+      width: 6px;
+      height: 6px;
+
+      border-radius: 50%;
+
+      background: #aab3c1;
+
+      animation:
+        bounce 1.2s infinite;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: 0.12s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.24s;
+    }
+
+    @keyframes bounce {
+      0%,
+      60%,
+      100% {
+        transform: translateY(0);
       }
-      .topbar{padding:0 16px}
-      .messages{padding:18px 16px 12px}
-      .composer-wrap{padding:0 12px 12px}
-      .welcome{margin-top:10vh}
-      .quick-grid{grid-template-columns:1fr}
+
+      30% {
+        transform: translateY(-4px);
+      }
+    }
+
+    /* =========================
+       Error
+    ========================= */
+
+    .error-bubble {
+      color: #b42318 !important;
+
+      background: #fff5f5 !important;
+
+      border-color: #fecaca !important;
+    }
+
+    /* =========================
+       Mobile
+    ========================= */
+
+    @media (max-width: 860px) {
+      .app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .topbar {
+        padding: 0 16px;
+      }
+
+      .messages {
+        padding:
+          18px
+          16px
+          12px;
+      }
+
+      .composer-wrap {
+        padding:
+          0
+          12px
+          12px;
+      }
+
+      .welcome {
+        margin-top: 10vh;
+      }
+
+      .quick-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .conversation-name strong {
+        font-size: 14px;
+      }
+
+      .model-menu {
+        right: -4px;
+      }
     }
   </style>
 </head>
+
 <body>
   <div class="app">
+
+    <!-- =========================
+         Sidebar
+    ========================== -->
+
     <aside class="sidebar">
+
       <div class="brand">
         <div class="brand-mark">✦</div>
+
         <div class="brand-copy">
           <strong>Bloom Chat</strong>
           <span>RAG Playground</span>
         </div>
       </div>
 
-      <button class="new-chat" id="newChatBtn">＋ 새 채팅</button>
+      <button
+        class="new-chat"
+        id="newChatBtn"
+      >
+        ＋ 새 채팅
+      </button>
 
-      <div class="side-label">RECENT CHATS</div>
-      <div class="chat-list" id="chatList">
+      <div class="side-label">
+        RECENT CHATS
+      </div>
+
+      <div
+        class="chat-list"
+        id="chatList"
+      >
         <div class="chat-item active">
           <div class="chat-icon">✦</div>
+
           <div>
-            <div class="chat-title">새로운 아이디어 탐색</div>
-            <div class="chat-time">방금 전</div>
+            <div class="chat-title">
+              새로운 아이디어 탐색
+            </div>
+
+            <div class="chat-time">
+              방금 전
+            </div>
           </div>
         </div>
+
         <div class="chat-item">
           <div class="chat-icon">◌</div>
+
           <div>
-            <div class="chat-title">룰북 기반 질문 테스트</div>
-            <div class="chat-time">오늘</div>
+            <div class="chat-title">
+              룰북 기반 질문 테스트
+            </div>
+
+            <div class="chat-time">
+              오늘
+            </div>
           </div>
         </div>
+
         <div class="chat-item">
           <div class="chat-icon">↗</div>
+
           <div>
-            <div class="chat-title">RAG 검색 결과 비교</div>
-            <div class="chat-time">어제</div>
+            <div class="chat-title">
+              RAG 검색 결과 비교
+            </div>
+
+            <div class="chat-time">
+              어제
+            </div>
           </div>
         </div>
       </div>
 
       <div class="sidebar-footer">
-        <div class="status"><span class="dot"></span>Local test mode</div>
-        <button class="tiny-btn" id="clearBtn">초기화</button>
+
+        <div class="status">
+          <span class="dot"></span>
+          API 연결 모드
+        </div>
+
+        <button
+          class="tiny-btn"
+          id="clearBtn"
+        >
+          초기화
+        </button>
+
       </div>
     </aside>
 
+
+    <!-- =========================
+         Main
+    ========================== -->
+
     <main class="main">
+
       <header class="topbar">
+
         <div class="conversation-name">
-          <strong id="conversationTitle">새로운 아이디어 탐색</strong>
-          <span class="live">TEST</span>
+
+          <strong id="conversationTitle">
+            새로운 아이디어 탐색
+          </strong>
+
+          <span class="live">
+            LIVE
+          </span>
+
         </div>
+
+
+        <!-- Model selector -->
 
         <div class="model-wrap">
-          <button class="model-button" id="modelButton">
-            <span class="model-pill" id="modelPill"></span>
-            <span id="selectedModelLabel">GPT-5.6 Luna</span>
-            <span>⌄</span>
+
+          <button
+            class="model-button"
+            id="modelButton"
+            type="button"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+
+            <span
+              class="model-pill"
+              id="modelPill"
+            ></span>
+
+            <span id="selectedModelLabel">
+              GPT-5.6 Luna
+            </span>
+
+            <span>
+              ⌄
+            </span>
+
           </button>
 
-          <div class="model-menu" id="modelMenu">
-            <button class="model-option selected" data-model="GPT-5.6 Luna" data-color="#7c5cff">
-              <span class="model-bullet" style="background:#7c5cff"></span>
+
+          <div
+            class="model-menu"
+            id="modelMenu"
+          >
+
+            <button
+              class="model-option selected"
+              data-model="GPT-5.6 Luna"
+              data-color="#7c5cff"
+              type="button"
+            >
+
+              <span
+                class="model-bullet"
+                style="background:#7c5cff"
+              ></span>
+
               <span>
-                <span class="model-name">GPT-5.6 Luna</span>
-                <span class="model-meta">OpenAI · 빠른 기본 모델</span>
+
+                <span class="model-name">
+                  GPT-5.6 Luna
+                </span>
+
+                <span class="model-meta">
+                  OpenAI · 기본 모델
+                </span>
+
               </span>
+
             </button>
-            <button class="model-option" data-model="Gemini 3.1 Flash-Lite" data-color="#20a77a">
-              <span class="model-bullet" style="background:#20a77a"></span>
+
+
+            <button
+              class="model-option"
+              data-model="Gemini 3.1 Flash-Lite"
+              data-color="#20a77a"
+              type="button"
+            >
+
+              <span
+                class="model-bullet"
+                style="background:#20a77a"
+              ></span>
+
               <span>
-                <span class="model-name">Gemini 3.1 Flash-Lite</span>
-                <span class="model-meta">Google · 빠른 비교 모델</span>
+
+                <span class="model-name">
+                  Gemini 3.1 Flash-Lite
+                </span>
+
+                <span class="model-meta">
+                  Google · 비교 모델
+                </span>
+
               </span>
+
             </button>
+
           </div>
         </div>
+
       </header>
 
-      <section class="messages" id="messages">
-        <div class="welcome" id="welcome">
-          <div class="welcome-orb">✦</div>
-          <h1>무엇을 탐색해볼까요?</h1>
+
+      <!-- =========================
+           Messages area
+      ========================== -->
+
+      <section
+        class="messages"
+        id="messages"
+      >
+
+        <div
+          class="welcome"
+          id="welcome"
+        >
+
+          <div class="welcome-orb">
+            ✦
+          </div>
+
+          <h1>
+            무엇을 탐색해볼까요?
+          </h1>
+
           <p>
-            개인 RAG 챗봇 테스트 공간입니다. 지금은 UI만 동작하며,
-            이후 Firebase, RAG 검색, GPT-5.6 Luna, Gemini 3.1 Flash-Lite를 연결합니다.
+            개인 RAG 챗봇 테스트 공간입니다.
+            현재는 선택한 AI 모델과 직접 연결하여
+            대화를 테스트할 수 있습니다.
+            이후 문서 검색과 RAG 기능을 연결합니다.
           </p>
 
+
           <div class="quick-grid">
-            <button class="quick" data-prompt="내가 가진 자료를 기반으로 핵심 내용을 요약해줘.">
-              <strong>자료 요약하기</strong>
-              <span>내 지식베이스를 중심으로 답변</span>
+
+            <button
+              class="quick"
+              data-prompt="내가 가진 자료를 기반으로 핵심 내용을 요약해줘."
+              type="button"
+            >
+
+              <strong>
+                자료 요약하기
+              </strong>
+
+              <span>
+                내 지식베이스를 중심으로 답변
+              </span>
+
             </button>
-            <button class="quick" data-prompt="이 자료에서 중요한 원칙을 5개만 뽑아줘.">
-              <strong>핵심 원칙 찾기</strong>
-              <span>관련 문서를 찾아 우선순위 정리</span>
+
+
+            <button
+              class="quick"
+              data-prompt="이 자료에서 중요한 원칙을 5개만 뽑아줘."
+              type="button"
+            >
+
+              <strong>
+                핵심 원칙 찾기
+              </strong>
+
+              <span>
+                관련 문서를 찾아 우선순위 정리
+              </span>
+
             </button>
-            <button class="quick" data-prompt="이 주제에 대해 반대되는 관점도 함께 검토해줘.">
-              <strong>다른 관점 보기</strong>
-              <span>한쪽 결론에 치우치지 않게 비교</span>
+
+
+            <button
+              class="quick"
+              data-prompt="이 주제에 대해 반대되는 관점도 함께 검토해줘."
+              type="button"
+            >
+
+              <strong>
+                다른 관점 보기
+              </strong>
+
+              <span>
+                한쪽 결론에 치우치지 않게 비교
+              </span>
+
             </button>
-            <button class="quick" data-prompt="내 질문과 가장 관련 있는 근거를 먼저 제시해줘.">
-              <strong>근거 중심 답변</strong>
-              <span>RAG 검색 결과를 우선 활용</span>
+
+
+            <button
+              class="quick"
+              data-prompt="내 질문과 가장 관련 있는 근거를 먼저 제시해줘."
+              type="button"
+            >
+
+              <strong>
+                근거 중심 답변
+              </strong>
+
+              <span>
+                추후 RAG 검색 결과를 우선 활용
+              </span>
+
             </button>
+
           </div>
+
         </div>
+
 
         <div id="messageList"></div>
+
       </section>
 
+
+      <!-- =========================
+           Composer
+      ========================== -->
+
       <div class="composer-wrap">
+
         <div class="composer">
-          <textarea id="promptInput" placeholder="메시지를 입력하세요..."></textarea>
+
+          <textarea
+            id="promptInput"
+            placeholder="메시지를 입력하세요..."
+            aria-label="메시지 입력"
+          ></textarea>
+
+
           <div class="composer-bottom">
-            <div class="composer-hint">Enter 전송 · Shift + Enter 줄바꿈</div>
-            <button class="send-btn" id="sendBtn" aria-label="메시지 전송">↑</button>
+
+            <div class="composer-hint">
+              Enter 전송 · Shift + Enter 줄바꿈
+            </div>
+
+            <button
+              class="send-btn"
+              id="sendBtn"
+              type="button"
+              aria-label="메시지 전송"
+            >
+              ↑
+            </button>
+
           </div>
+
         </div>
+
       </div>
+
     </main>
+
   </div>
+
+
+  <!-- =========================
+       JavaScript
+  ========================== -->
 
   <script>
     const state = {
@@ -523,129 +1206,534 @@
       messages: []
     };
 
-    const promptInput = document.getElementById("promptInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const messageList = document.getElementById("messageList");
-    const welcome = document.getElementById("welcome");
-    const modelButton = document.getElementById("modelButton");
-    const modelMenu = document.getElementById("modelMenu");
-    const selectedModelLabel = document.getElementById("selectedModelLabel");
-    const modelPill = document.getElementById("modelPill");
-    const newChatBtn = document.getElementById("newChatBtn");
-    const clearBtn = document.getElementById("clearBtn");
+
+    /* =========================
+       DOM references
+    ========================== */
+
+    const promptInput =
+      document.getElementById("promptInput");
+
+    const sendBtn =
+      document.getElementById("sendBtn");
+
+    const messageList =
+      document.getElementById("messageList");
+
+    const welcome =
+      document.getElementById("welcome");
+
+    const modelButton =
+      document.getElementById("modelButton");
+
+    const modelMenu =
+      document.getElementById("modelMenu");
+
+    const selectedModelLabel =
+      document.getElementById(
+        "selectedModelLabel"
+      );
+
+    const modelPill =
+      document.getElementById("modelPill");
+
+    const newChatBtn =
+      document.getElementById("newChatBtn");
+
+    const clearBtn =
+      document.getElementById("clearBtn");
+
+    const conversationTitle =
+      document.getElementById(
+        "conversationTitle"
+      );
+
+
+    /* =========================
+       Textarea auto resize
+    ========================== */
 
     function autoResize() {
       promptInput.style.height = "auto";
-      promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + "px";
+
+      promptInput.style.height =
+        Math.min(
+          promptInput.scrollHeight,
+          160
+        ) + "px";
     }
+
+
+    /* =========================
+       Scroll
+    ========================== */
 
     function scrollToBottom() {
-      const container = document.getElementById("messages");
-      container.scrollTop = container.scrollHeight;
+      const container =
+        document.getElementById(
+          "messages"
+        );
+
+      container.scrollTop =
+        container.scrollHeight;
     }
 
-    function addMessage(role, text) {
-      welcome.style.display = "none";
-      const row = document.createElement("div");
-      row.className = "message-row " + role;
 
-      const bubble = document.createElement("div");
-      bubble.className = "bubble";
+    /* =========================
+       Add message
+    ========================== */
+
+    function addMessage(
+      role,
+      text,
+      isError = false
+    ) {
+      welcome.style.display = "none";
+
+      const row =
+        document.createElement("div");
+
+      row.className =
+        "message-row " + role;
+
+
+      const bubble =
+        document.createElement("div");
+
+      bubble.className =
+        "bubble";
+
+
+      if (isError) {
+        bubble.classList.add(
+          "error-bubble"
+        );
+      }
+
+
       bubble.textContent = text;
 
+
       row.appendChild(bubble);
+
       messageList.appendChild(row);
-      state.messages.push({ role, text });
+
+
+      state.messages.push({
+        role,
+        text
+      });
+
+
       scrollToBottom();
     }
+
+
+    /* =========================
+       Typing indicator
+    ========================== */
 
     function addTyping() {
       welcome.style.display = "none";
-      const row = document.createElement("div");
-      row.className = "message-row assistant";
+
+      const row =
+        document.createElement("div");
+
+      row.className =
+        "message-row assistant";
+
       row.id = "typingRow";
-      row.innerHTML = '<div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>';
+
+
+      row.innerHTML = `
+        <div class="bubble">
+          <div class="typing">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      `;
+
+
       messageList.appendChild(row);
+
       scrollToBottom();
     }
 
+
     function removeTyping() {
-      document.getElementById("typingRow")?.remove();
+      document
+        .getElementById("typingRow")
+        ?.remove();
     }
 
-    async function sendMessage(textFromQuick = null) {
-      const text = (textFromQuick ?? promptInput.value).trim();
-      if (!text) return;
+
+    /* =========================
+       Send message
+    ========================== */
+
+    async function sendMessage(
+      textFromQuick = null
+    ) {
+      const text =
+        (
+          textFromQuick ??
+          promptInput.value
+        ).trim();
+
+
+      if (!text) {
+        return;
+      }
+
+
+      if (sendBtn.disabled) {
+        return;
+      }
+
 
       promptInput.value = "";
+
       autoResize();
+
       sendBtn.disabled = true;
 
-      addMessage("user", text);
-      addTyping();
 
-      // TODO: Replace this mock with the real /api/chat endpoint.
-      await new Promise(resolve => setTimeout(resolve, 750));
-
-      removeTyping();
       addMessage(
-        "assistant",
-        `[UI 테스트 응답]\n현재 선택 모델: ${state.model}\n\n실제 연결 단계에서는 이 자리에 RAG 검색 결과와 LLM 응답이 표시됩니다.`
+        "user",
+        text
       );
 
-      sendBtn.disabled = false;
-      promptInput.focus();
+      addTyping();
+
+
+      try {
+        /*
+         * 현재 선택된 모델과
+         * 전체 대화 내용을 Vercel API로 전달합니다.
+         *
+         * Vercel:
+         *     POST /api/chat
+         *
+         * 서버에서 OPENAI_API_KEY를 사용합니다.
+         */
+
+        const response =
+          await fetch(
+            "/api/chat",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                model: state.model,
+
+                messages:
+                  state.messages.map(
+                    (message) => ({
+                      role:
+                        message.role,
+
+                      content:
+                        message.text
+                    })
+                  )
+              })
+            }
+          );
+
+
+        let data = null;
+
+        try {
+          data =
+            await response.json();
+        } catch (jsonError) {
+          throw new Error(
+            "서버에서 올바른 JSON 응답을 받지 못했습니다."
+          );
+        }
+
+
+        removeTyping();
+
+
+        if (!response.ok) {
+          throw new Error(
+            data?.error ||
+            `API 요청 실패 (${response.status})`
+          );
+        }
+
+
+        if (
+          !data ||
+          typeof data.answer !== "string"
+        ) {
+          throw new Error(
+            "AI 응답을 찾을 수 없습니다."
+          );
+        }
+
+
+        addMessage(
+          "assistant",
+          data.answer
+        );
+
+      } catch (error) {
+        removeTyping();
+
+        console.error(
+          "Chat request error:",
+          error
+        );
+
+
+        addMessage(
+          "assistant",
+          "오류가 발생했습니다.\n\n" +
+          (
+            error?.message ||
+            "알 수 없는 오류"
+          ),
+          true
+        );
+
+      } finally {
+        sendBtn.disabled = false;
+
+        promptInput.focus();
+      }
     }
 
-    modelButton.addEventListener("click", () => {
-      modelMenu.classList.toggle("open");
-    });
 
-    document.addEventListener("click", (e) => {
-      if (!modelButton.contains(e.target) && !modelMenu.contains(e.target)) {
-        modelMenu.classList.remove("open");
+    /* =========================
+       Model menu
+    ========================== */
+
+    modelButton.addEventListener(
+      "click",
+      (event) => {
+        event.stopPropagation();
+
+        const isOpen =
+          modelMenu.classList.toggle(
+            "open"
+          );
+
+        modelButton.setAttribute(
+          "aria-expanded",
+          String(isOpen)
+        );
       }
-    });
+    );
 
-    document.querySelectorAll(".model-option").forEach(option => {
-      option.addEventListener("click", () => {
-        state.model = option.dataset.model;
-        selectedModelLabel.textContent = state.model;
-        modelPill.style.background = option.dataset.color;
-        modelMenu.classList.remove("open");
 
-        document.querySelectorAll(".model-option").forEach(x => x.classList.remove("selected"));
-        option.classList.add("selected");
+    document.addEventListener(
+      "click",
+      (event) => {
+        if (
+          !modelButton.contains(
+            event.target
+          ) &&
+          !modelMenu.contains(
+            event.target
+          )
+        ) {
+          modelMenu.classList.remove(
+            "open"
+          );
+
+          modelButton.setAttribute(
+            "aria-expanded",
+            "false"
+          );
+        }
+      }
+    );
+
+
+    /* =========================
+       Model selection
+    ========================== */
+
+    document
+      .querySelectorAll(
+        ".model-option"
+      )
+      .forEach((option) => {
+
+        option.addEventListener(
+          "click",
+          () => {
+
+            state.model =
+              option.dataset.model;
+
+
+            selectedModelLabel.textContent =
+              state.model;
+
+
+            modelPill.style.background =
+              option.dataset.color;
+
+
+            modelPill.style.boxShadow =
+              `0 0 0 4px ${option.dataset.color}22`;
+
+
+            document
+              .querySelectorAll(
+                ".model-option"
+              )
+              .forEach((x) => {
+                x.classList.remove(
+                  "selected"
+                );
+              });
+
+
+            option.classList.add(
+              "selected"
+            );
+
+
+            modelMenu.classList.remove(
+              "open"
+            );
+
+
+            modelButton.setAttribute(
+              "aria-expanded",
+              "false"
+            );
+          }
+        );
+
       });
-    });
 
-    document.querySelectorAll(".quick").forEach(btn => {
-      btn.addEventListener("click", () => sendMessage(btn.dataset.prompt));
-    });
 
-    sendBtn.addEventListener("click", () => sendMessage());
+    /* =========================
+       Quick prompts
+    ========================== */
 
-    promptInput.addEventListener("input", autoResize);
+    document
+      .querySelectorAll(".quick")
+      .forEach((button) => {
 
-    promptInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
+        button.addEventListener(
+          "click",
+          () => {
+            sendMessage(
+              button.dataset.prompt
+            );
+          }
+        );
+
+      });
+
+
+    /* =========================
+       Send button
+    ========================== */
+
+    sendBtn.addEventListener(
+      "click",
+      () => {
         sendMessage();
       }
-    });
+    );
+
+
+    /* =========================
+       Textarea input
+    ========================== */
+
+    promptInput.addEventListener(
+      "input",
+      autoResize
+    );
+
+
+    /* =========================
+       Enter / Shift + Enter
+    ========================== */
+
+    promptInput.addEventListener(
+      "keydown",
+      (event) => {
+
+        if (
+          event.key === "Enter" &&
+          !event.shiftKey
+        ) {
+          event.preventDefault();
+
+          sendMessage();
+        }
+
+      }
+    );
+
+
+    /* =========================
+       Reset chat
+    ========================== */
 
     function resetChat() {
       state.messages = [];
+
       messageList.innerHTML = "";
+
       welcome.style.display = "";
+
       promptInput.value = "";
+
       autoResize();
-      document.getElementById("conversationTitle").textContent = "새로운 아이디어 탐색";
+
+
+      conversationTitle.textContent =
+        "새로운 아이디어 탐색";
+
+
+      removeTyping();
+
+
+      sendBtn.disabled = false;
+
       promptInput.focus();
+
+
+      scrollToBottom();
     }
 
-    newChatBtn.addEventListener("click", resetChat);
-    clearBtn.addEventListener("click", resetChat);
+
+    newChatBtn.addEventListener(
+      "click",
+      resetChat
+    );
+
+
+    clearBtn.addEventListener(
+      "click",
+      resetChat
+    );
+
+
+    /* =========================
+       Initial state
+    ========================== */
+
+    autoResize();
+
+    promptInput.focus();
   </script>
 </body>
 </html>
