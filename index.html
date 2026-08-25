@@ -66,7 +66,7 @@
   <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⚙️ RAG 파라미터 설정 (config.json)</h3>
+        <h3>⚙️ RAG 파라미터 설정</h3>
         <button class="icon-btn" id="close-modal-btn" style="color: #64748b;">✕</button>
       </div>
 
@@ -128,17 +128,30 @@
       temperature: 0.2
     };
 
-    function appendMessage(sender, text) {
-      const msgDiv = document.createElement('div');
-      msgDiv.classList.add('message', sender);
-      msgDiv.innerText = text;
-      chatContainer.appendChild(msgDiv);
-      chatContainer.scrollTop = chatContainer.scrollHeight;
-      return msgDiv;
+    function getConfig() {
+      const saved = localStorage.getItem('rag_config');
+      if (!saved) return DEFAULT_CONFIG;
+      try { return JSON.parse(saved); } catch { return DEFAULT_CONFIG; }
+    }
+
+    function saveConfig(config) {
+      localStorage.setItem('rag_config', JSON.stringify(config));
     }
 
     function updateHeaderBadge(modelValue) {
       headerModelBadge.innerText = MODEL_NAMES[modelValue] || modelValue;
+    }
+
+    function loadSettingsToUI() {
+      const config = getConfig();
+      document.getElementById('cfg-sysprompt').value = config.systemPrompt;
+      document.getElementById('cfg-limit').value = config.limit;
+      document.getElementById('cfg-temp').value = config.temperature;
+
+      const targetRadio = document.querySelector(`input[name="cfg-model"][value="${config.model}"]`);
+      if (targetRadio) targetRadio.checked = true;
+
+      updateHeaderBadge(config.model);
     }
 
     inputForm.addEventListener('submit', async (e) => {
@@ -150,18 +163,17 @@
       userInput.value = '';
 
       const loadingMsg = appendMessage('ai', '🔍 백서 검색 및 답변 생성 중...');
+      const currentConfig = getConfig();
 
       try {
         const res = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: query })
+          body: JSON.stringify({ message: query, config: currentConfig })
         });
         
         const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || `서버 에러 (${res.status})`);
-        }
+        if (!res.ok || data.error) throw new Error(data.error || `서버 에러 (${res.status})`);
 
         loadingMsg.innerText = data.answer || '답변을 가져올 수 없습니다.';
       } catch (err) {
@@ -169,69 +181,39 @@
       }
     });
 
-    async function loadSettings() {
-      try {
-        const res = await fetch('/api/config');
-        const config = await res.json();
-        
-        document.getElementById('cfg-sysprompt').value = config.systemPrompt || DEFAULT_CONFIG.systemPrompt;
-        document.getElementById('cfg-limit').value = config.limit ?? DEFAULT_CONFIG.limit;
-        document.getElementById('cfg-temp').value = config.temperature ?? DEFAULT_CONFIG.temperature;
-
-        const selectedModel = config.model || DEFAULT_CONFIG.model;
-        const targetRadio = document.querySelector(`input[name="cfg-model"][value="${selectedModel}"]`);
-        if (targetRadio) {
-          targetRadio.checked = true;
-        } else {
-          document.querySelector(`input[name="cfg-model"][value="${DEFAULT_CONFIG.model}"]`).checked = true;
-        }
-
-        updateHeaderBadge(selectedModel);
-      } catch (err) {
-        console.error('설정 불러오기 실패:', err);
-      }
+    function appendMessage(sender, text) {
+      const msgDiv = document.createElement('div');
+      msgDiv.classList.add('message', sender);
+      msgDiv.innerText = text;
+      chatContainer.appendChild(msgDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+      return msgDiv;
     }
 
-    async function saveSettings() {
-      const selectedModelRadio = document.querySelector('input[name="cfg-model"]:checked');
-      const selectedModel = selectedModelRadio ? selectedModelRadio.value : DEFAULT_CONFIG.model;
-      
-      const updatedConfig = {
-        systemPrompt: document.getElementById('cfg-sysprompt').value || DEFAULT_CONFIG.systemPrompt,
-        model: selectedModel,
-        limit: parseInt(document.getElementById('cfg-limit').value, 10) || DEFAULT_CONFIG.limit,
-        temperature: parseFloat(document.getElementById('cfg-temp').value) ?? DEFAULT_CONFIG.temperature
-      };
+    // 초기 실행
+    loadSettingsToUI();
 
-      try {
-        await fetch('/api/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedConfig)
-        });
-        updateHeaderBadge(selectedModel);
-        modal.classList.remove('active');
-      } catch (err) {
-        alert('설정 저장 실패: ' + err.message);
-      }
-    }
-
-    // 페이지 접속 시 설정 로드
-    loadSettings();
-
-    // 톱니바퀴 클릭 시 모달 열고 설정 새로 로드
-    openSettingsBtn.addEventListener('click', async () => {
-      await loadSettings();
+    openSettingsBtn.addEventListener('click', () => {
+      loadSettingsToUI();
       modal.classList.add('active');
     });
 
-    // ✕ 버튼은 단순 창 닫기 (저장 안 함)
     closeModalBtn.addEventListener('click', () => {
       modal.classList.remove('active');
     });
 
-    // 저장 버튼만 저장 수행
-    saveSettingsBtn.addEventListener('click', saveSettings);
+    saveSettingsBtn.addEventListener('click', () => {
+      const selectedModelRadio = document.querySelector('input[name="cfg-model"]:checked');
+      const newConfig = {
+        systemPrompt: document.getElementById('cfg-sysprompt').value,
+        model: selectedModelRadio ? selectedModelRadio.value : DEFAULT_CONFIG.model,
+        limit: parseInt(document.getElementById('cfg-limit').value, 10) || DEFAULT_CONFIG.limit,
+        temperature: parseFloat(document.getElementById('cfg-temp').value) ?? DEFAULT_CONFIG.temperature
+      };
+      saveConfig(newConfig);
+      updateHeaderBadge(newConfig.model);
+      modal.classList.remove('active');
+    });
   </script>
 </body>
 </html>
