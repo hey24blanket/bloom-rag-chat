@@ -3,7 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>Bloom Chat — RAG Chatbot</title>
+
   <meta
     name="description"
     content="A lightweight personal RAG chatbot UI."
@@ -14,16 +16,22 @@
       --bg: #f7f9fc;
       --panel: rgba(255, 255, 255, 0.82);
       --panel-solid: #ffffff;
+
       --text: #162033;
       --muted: #718096;
+
       --line: #e8edf4;
+
       --accent: #7c5cff;
       --accent-2: #20c997;
       --accent-soft: #efeaff;
+
       --user: #ede9fe;
       --assistant: #ffffff;
-      --shadow: 0 18px 50px rgba(39, 50, 80, 0.1);
+
+      --shadow: 0 18px 50px rgba(39, 50, 80, 0.10);
       --shadow-soft: 0 8px 24px rgba(39, 50, 80, 0.07);
+
       --radius: 22px;
     }
 
@@ -38,6 +46,7 @@
 
     body {
       margin: 0;
+
       font-family:
         Inter,
         ui-sans-serif,
@@ -61,6 +70,7 @@
         var(--bg);
 
       color: var(--text);
+
       overflow: hidden;
     }
 
@@ -73,20 +83,31 @@
       cursor: pointer;
     }
 
+    /* =========================================
+       APP
+    ========================================= */
+
     .app {
       height: 100%;
+
       display: grid;
+
       grid-template-columns: 280px 1fr;
     }
 
-    /* =========================
-       Sidebar
-    ========================= */
+    /* =========================================
+       SIDEBAR
+    ========================================= */
 
     .sidebar {
       padding: 18px;
-      border-right: 1px solid rgba(220, 228, 240, 0.85);
-      background: rgba(255, 255, 255, 0.64);
+
+      border-right:
+        1px solid rgba(220, 228, 240, 0.85);
+
+      background:
+        rgba(255, 255, 255, 0.64);
+
       backdrop-filter: blur(16px);
 
       display: flex;
@@ -98,55 +119,68 @@
     .brand {
       display: flex;
       align-items: center;
+
       gap: 12px;
+
       padding: 8px 8px 18px;
     }
 
     .brand-mark {
       width: 40px;
       height: 40px;
+
       border-radius: 14px;
 
       display: grid;
       place-items: center;
 
       color: white;
+
       font-weight: 800;
 
-      background: linear-gradient(
-        135deg,
-        #7c5cff,
-        #20c997
-      );
+      background:
+        linear-gradient(
+          135deg,
+          #7c5cff,
+          #20c997
+        );
 
       box-shadow:
-        0 10px 22px rgba(124, 92, 255, 0.22);
+        0 10px 22px
+        rgba(124, 92, 255, 0.22);
     }
 
     .brand-copy strong {
       display: block;
+
       font-size: 15px;
     }
 
     .brand-copy span {
       display: block;
+
       color: var(--muted);
+
       font-size: 11px;
+
       margin-top: 2px;
     }
 
     .new-chat {
       border: 0;
+
       border-radius: 15px;
 
       padding: 13px 14px;
 
       background: var(--text);
+
       color: white;
 
       font-weight: 700;
 
-      box-shadow: var(--shadow-soft);
+      box-shadow:
+        var(--shadow-soft);
 
       margin-bottom: 14px;
 
@@ -154,7 +188,9 @@
     }
 
     .new-chat:hover {
-      transform: translateY(-1px);
+      transform:
+        translateY(-1px);
+
       opacity: 0.95;
     }
 
@@ -162,28 +198,35 @@
       padding: 4px 8px 8px;
 
       color: #97a2b4;
+
       font-size: 11px;
 
       font-weight: 700;
+
       letter-spacing: 0.08em;
     }
 
     .chat-list {
       display: flex;
+
       flex-direction: column;
 
       gap: 5px;
+
       overflow: auto;
     }
 
     .chat-item {
       display: flex;
+
       gap: 10px;
 
       padding: 10px 11px;
 
       border-radius: 13px;
-      border: 1px solid transparent;
+
+      border:
+        1px solid transparent;
 
       color: #40506a;
 
@@ -192,11 +235,15 @@
 
     .chat-item:hover {
       background: #fff;
-      border-color: var(--line);
+
+      border-color:
+        var(--line);
     }
 
     .chat-item.active {
-      background: var(--accent-soft);
+      background:
+        var(--accent-soft);
+
       color: #4c3fb4;
     }
 
@@ -210,6 +257,7 @@
       place-items: center;
 
       background: #eef2f7;
+
       font-size: 12px;
 
       flex: 0 0 auto;
@@ -221,27 +269,36 @@
 
     .chat-title {
       font-size: 12px;
+
       font-weight: 650;
 
       white-space: nowrap;
+
       overflow: hidden;
+
       text-overflow: ellipsis;
     }
 
     .chat-time {
       font-size: 10px;
+
       color: #9aa4b5;
+
       margin-top: 3px;
     }
 
     .sidebar-footer {
       margin-top: auto;
+
       padding-top: 14px;
 
-      border-top: 1px solid var(--line);
+      border-top:
+        1px solid var(--line);
 
       display: flex;
+
       justify-content: space-between;
+
       align-items: center;
 
       gap: 8px;
@@ -249,10 +306,13 @@
 
     .status {
       display: flex;
+
       align-items: center;
+
       gap: 7px;
 
       font-size: 11px;
+
       color: #637085;
     }
 
@@ -262,16 +322,20 @@
 
       border-radius: 50%;
 
-      background: #20c997;
+      background:
+        #20c997;
 
       box-shadow:
-        0 0 0 4px rgba(32, 201, 151, 0.12);
+        0 0 0 4px
+        rgba(32, 201, 151, 0.12);
     }
 
     .tiny-btn {
-      border: 1px solid var(--line);
+      border:
+        1px solid var(--line);
 
       background: white;
+
       color: #68758a;
 
       border-radius: 11px;
@@ -281,24 +345,31 @@
       font-size: 10px;
     }
 
-    /* =========================
-       Main
-    ========================= */
+    /* =========================================
+       MAIN
+    ========================================= */
 
     .main {
       min-width: 0;
 
       display: flex;
+
       flex-direction: column;
 
       height: 100%;
     }
 
+    /* =========================================
+       TOPBAR
+    ========================================= */
+
     .topbar {
       height: 74px;
 
       display: flex;
+
       align-items: center;
+
       justify-content: space-between;
 
       padding: 0 28px;
@@ -306,14 +377,18 @@
       border-bottom:
         1px solid rgba(220, 228, 240, 0.75);
 
-      background: rgba(255, 255, 255, 0.56);
+      background:
+        rgba(255, 255, 255, 0.56);
 
-      backdrop-filter: blur(16px);
+      backdrop-filter:
+        blur(16px);
     }
 
     .conversation-name {
       display: flex;
+
       align-items: center;
+
       gap: 10px;
     }
 
@@ -329,14 +404,15 @@
       border-radius: 999px;
 
       background: #eefbf7;
+
       color: #13956f;
 
       font-weight: 700;
     }
 
-    /* =========================
-       Model selector
-    ========================= */
+    /* =========================================
+       MODEL SELECTOR
+    ========================================= */
 
     .model-wrap {
       position: relative;
@@ -344,13 +420,16 @@
 
     .model-button {
       display: flex;
+
       align-items: center;
 
       gap: 8px;
 
-      border: 1px solid var(--line);
+      border:
+        1px solid var(--line);
 
-      background: rgba(255, 255, 255, 0.94);
+      background:
+        rgba(255, 255, 255, 0.94);
 
       padding: 9px 11px;
 
@@ -359,10 +438,12 @@
       color: #4d5c73;
 
       font-size: 12px;
+
       font-weight: 700;
 
       box-shadow:
-        0 4px 12px rgba(50, 60, 90, 0.04);
+        0 4px 12px
+        rgba(50, 60, 90, 0.04);
     }
 
     .model-pill {
@@ -371,27 +452,32 @@
 
       border-radius: 50%;
 
-      background: var(--accent);
+      background:
+        var(--accent);
 
       box-shadow:
-        0 0 0 4px var(--accent-soft);
+        0 0 0 4px
+        var(--accent-soft);
     }
 
     .model-menu {
       position: absolute;
 
       right: 0;
+
       top: 47px;
 
       width: 240px;
 
       background: white;
 
-      border: 1px solid var(--line);
+      border:
+        1px solid var(--line);
 
       border-radius: 16px;
 
-      box-shadow: var(--shadow);
+      box-shadow:
+        var(--shadow);
 
       padding: 8px;
 
@@ -408,6 +494,7 @@
       width: 100%;
 
       display: flex;
+
       align-items: flex-start;
 
       gap: 10px;
@@ -430,13 +517,15 @@
     }
 
     .model-option.selected {
-      background: #f2efff;
+      background:
+        #f2efff;
     }
 
     .model-name {
       display: block;
 
       font-size: 12px;
+
       font-weight: 750;
     }
 
@@ -461,9 +550,9 @@
       flex: 0 0 auto;
     }
 
-    /* =========================
-       Messages
-    ========================= */
+    /* =========================================
+       MESSAGE AREA
+    ========================================= */
 
     .messages {
       flex: 1;
@@ -475,7 +564,8 @@
         min(7vw, 100px)
         20px;
 
-      scroll-behavior: smooth;
+      scroll-behavior:
+        smooth;
     }
 
     .welcome {
@@ -490,11 +580,13 @@
       width: 74px;
       height: 74px;
 
-      margin: 0 auto 18px;
+      margin:
+        0 auto 18px;
 
       border-radius: 25px;
 
       display: grid;
+
       place-items: center;
 
       font-size: 30px;
@@ -516,13 +608,16 @@
 
       font-size: 28px;
 
-      letter-spacing: -0.03em;
+      letter-spacing:
+        -0.03em;
     }
 
     .welcome p {
-      margin: 10px auto 0;
+      margin:
+        10px auto 0;
 
-      color: var(--muted);
+      color:
+        var(--muted);
 
       font-size: 13px;
 
@@ -537,36 +632,48 @@
       display: grid;
 
       grid-template-columns:
-        repeat(2, minmax(0, 1fr));
+        repeat(
+          2,
+          minmax(0, 1fr)
+        );
 
       gap: 10px;
     }
 
     .quick {
-      border: 1px solid var(--line);
+      border:
+        1px solid var(--line);
 
-      background: rgba(255, 255, 255, 0.78);
+      background:
+        rgba(255, 255, 255, 0.78);
 
-      padding: 13px 14px;
+      padding:
+        13px 14px;
 
       border-radius: 15px;
 
       text-align: left;
 
-      box-shadow: var(--shadow-soft);
+      box-shadow:
+        var(--shadow-soft);
 
       color: #435168;
 
-      transition: 0.2s ease;
+      transition:
+        0.2s ease;
     }
 
     .quick:hover {
-      transform: translateY(-2px);
-      border-color: #ddd7ff;
+      transform:
+        translateY(-2px);
+
+      border-color:
+        #ddd7ff;
     }
 
     .quick strong {
       display: block;
+
       font-size: 11px;
     }
 
@@ -580,6 +687,10 @@
       margin-top: 3px;
     }
 
+    /* =========================================
+       MESSAGES
+    ========================================= */
+
     .message-row {
       display: flex;
 
@@ -587,46 +698,106 @@
     }
 
     .message-row.user {
-      justify-content: flex-end;
+      justify-content:
+        flex-end;
+    }
+
+    .message-row.assistant {
+      justify-content:
+        flex-start;
+    }
+
+    .bubble-wrap {
+      max-width:
+        min(760px, 86%);
     }
 
     .bubble {
-      max-width:
-        min(760px, 86%);
-
       border-radius: 18px;
 
-      padding: 13px 15px;
+      padding:
+        13px 15px;
 
       line-height: 1.7;
 
       font-size: 13px;
 
-      white-space: pre-wrap;
+      white-space:
+        pre-wrap;
 
-      box-shadow: var(--shadow-soft);
+      word-break:
+        break-word;
+
+      box-shadow:
+        var(--shadow-soft);
     }
 
     .message-row.assistant .bubble {
-      background: var(--assistant);
+      background:
+        var(--assistant);
 
-      border: 1px solid var(--line);
+      border:
+        1px solid var(--line);
     }
 
     .message-row.user .bubble {
-      background: var(--user);
+      background:
+        var(--user);
 
-      color: #433a74;
+      color:
+        #433a74;
 
-      border: 1px solid #ddd6fe;
+      border:
+        1px solid #ddd6fe;
     }
 
-    /* =========================
-       Composer
-    ========================= */
+    /* =========================================
+       RESPONSE META
+    ========================================= */
+
+    .message-meta {
+      margin-top: 6px;
+
+      padding:
+        0 4px;
+
+      color:
+        #9aa3b3;
+
+      font-size: 10px;
+
+      line-height: 1.4;
+    }
+
+    .message-row.user .message-meta {
+      display: none;
+    }
+
+    .response-time {
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 4px;
+    }
+
+    .response-dot {
+      width: 5px;
+      height: 5px;
+
+      border-radius: 50%;
+
+      background:
+        #a8b0be;
+    }
+
+    /* =========================================
+       COMPOSER
+    ========================================= */
 
     .composer-wrap {
-      padding: 0 24px 20px;
+      padding:
+        0 24px 20px;
     }
 
     .composer {
@@ -634,23 +805,28 @@
 
       margin: 0 auto;
 
-      background: rgba(255, 255, 255, 0.86);
+      background:
+        rgba(255, 255, 255, 0.86);
 
-      border: 1px solid var(--line);
+      border:
+        1px solid var(--line);
 
       border-radius: 22px;
 
-      box-shadow: var(--shadow);
+      box-shadow:
+        var(--shadow);
 
       padding: 10px;
 
-      backdrop-filter: blur(16px);
+      backdrop-filter:
+        blur(16px);
     }
 
     .composer textarea {
       width: 100%;
 
       min-height: 52px;
+
       max-height: 160px;
 
       resize: none;
@@ -659,11 +835,14 @@
 
       outline: 0;
 
-      padding: 10px 12px 4px;
+      padding:
+        10px 12px 4px;
 
-      background: transparent;
+      background:
+        transparent;
 
-      color: var(--text);
+      color:
+        var(--text);
 
       font-size: 13px;
 
@@ -679,15 +858,18 @@
 
       align-items: center;
 
-      justify-content: space-between;
+      justify-content:
+        space-between;
 
-      padding: 4px 4px 2px;
+      padding:
+        4px 4px 2px;
 
       gap: 8px;
     }
 
     .composer-hint {
       font-size: 10px;
+
       color: #9aa3b3;
     }
 
@@ -714,7 +896,8 @@
 
       font-size: 17px;
 
-      transition: 0.2s ease;
+      transition:
+        0.2s ease;
     }
 
     .send-btn:hover {
@@ -728,12 +911,13 @@
 
       transform: none;
 
-      cursor: not-allowed;
+      cursor:
+        not-allowed;
     }
 
-    /* =========================
-       Typing
-    ========================= */
+    /* =========================================
+       TYPING
+    ========================================= */
 
     .typing {
       display: flex;
@@ -742,7 +926,8 @@
 
       align-items: center;
 
-      padding: 6px 0 2px;
+      padding:
+        6px 0 2px;
     }
 
     .typing span {
@@ -751,51 +936,65 @@
 
       border-radius: 50%;
 
-      background: #aab3c1;
+      background:
+        #aab3c1;
 
       animation:
         bounce 1.2s infinite;
     }
 
     .typing span:nth-child(2) {
-      animation-delay: 0.12s;
+      animation-delay:
+        0.12s;
     }
 
     .typing span:nth-child(3) {
-      animation-delay: 0.24s;
+      animation-delay:
+        0.24s;
     }
 
     @keyframes bounce {
       0%,
       60%,
       100% {
-        transform: translateY(0);
+        transform:
+          translateY(0);
       }
 
       30% {
-        transform: translateY(-4px);
+        transform:
+          translateY(-4px);
       }
     }
 
-    /* =========================
-       Error
-    ========================= */
+    /* =========================================
+       ERROR
+    ========================================= */
 
     .error-bubble {
-      color: #b42318 !important;
+      color:
+        #b42318 !important;
 
-      background: #fff5f5 !important;
+      background:
+        #fff5f5 !important;
 
-      border-color: #fecaca !important;
+      border-color:
+        #fecaca !important;
     }
 
-    /* =========================
-       Mobile
-    ========================= */
+    .error-meta {
+      color:
+        #c2413a;
+    }
+
+    /* =========================================
+       MOBILE
+    ========================================= */
 
     @media (max-width: 860px) {
       .app {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          1fr;
       }
 
       .sidebar {
@@ -803,7 +1002,8 @@
       }
 
       .topbar {
-        padding: 0 16px;
+        padding:
+          0 16px;
       }
 
       .messages {
@@ -815,17 +1015,17 @@
 
       .composer-wrap {
         padding:
-          0
-          12px
-          12px;
+          0 12px 12px;
       }
 
       .welcome {
-        margin-top: 10vh;
+        margin-top:
+          10vh;
       }
 
       .quick-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns:
+          1fr;
       }
 
       .conversation-name strong {
@@ -833,49 +1033,77 @@
       }
 
       .model-menu {
-        right: -4px;
+        right:
+          -4px;
+      }
+
+      .bubble-wrap {
+        max-width:
+          90%;
       }
     }
   </style>
 </head>
 
 <body>
+
   <div class="app">
 
-    <!-- =========================
-         Sidebar
-    ========================== -->
+    <!-- =====================================
+         SIDEBAR
+    ====================================== -->
 
     <aside class="sidebar">
 
       <div class="brand">
-        <div class="brand-mark">✦</div>
+
+        <div class="brand-mark">
+          ✦
+        </div>
 
         <div class="brand-copy">
-          <strong>Bloom Chat</strong>
-          <span>RAG Playground</span>
+
+          <strong>
+            Bloom Chat
+          </strong>
+
+          <span>
+            RAG Playground
+          </span>
+
         </div>
       </div>
+
 
       <button
         class="new-chat"
         id="newChatBtn"
+        type="button"
       >
         ＋ 새 채팅
       </button>
+
 
       <div class="side-label">
         RECENT CHATS
       </div>
 
+
       <div
         class="chat-list"
         id="chatList"
       >
-        <div class="chat-item active">
-          <div class="chat-icon">✦</div>
+
+        <div
+          class="chat-item active"
+        >
+
+          <div class="chat-icon">
+            ✦
+          </div>
 
           <div>
+
             <div class="chat-title">
               새로운 아이디어 탐색
             </div>
@@ -883,13 +1111,20 @@
             <div class="chat-time">
               방금 전
             </div>
+
           </div>
+
         </div>
 
+
         <div class="chat-item">
-          <div class="chat-icon">◌</div>
+
+          <div class="chat-icon">
+            ◌
+          </div>
 
           <div>
+
             <div class="chat-title">
               룰북 기반 질문 테스트
             </div>
@@ -897,13 +1132,20 @@
             <div class="chat-time">
               오늘
             </div>
+
           </div>
+
         </div>
 
+
         <div class="chat-item">
-          <div class="chat-icon">↗</div>
+
+          <div class="chat-icon">
+            ↗
+          </div>
 
           <div>
+
             <div class="chat-title">
               RAG 검색 결과 비교
             </div>
@@ -911,31 +1153,41 @@
             <div class="chat-time">
               어제
             </div>
+
           </div>
+
         </div>
+
       </div>
+
 
       <div class="sidebar-footer">
 
         <div class="status">
+
           <span class="dot"></span>
+
           API 연결 모드
+
         </div>
+
 
         <button
           class="tiny-btn"
           id="clearBtn"
+          type="button"
         >
           초기화
         </button>
 
       </div>
+
     </aside>
 
 
-    <!-- =========================
-         Main
-    ========================== -->
+    <!-- =====================================
+         MAIN
+    ====================================== -->
 
     <main class="main">
 
@@ -943,7 +1195,9 @@
 
         <div class="conversation-name">
 
-          <strong id="conversationTitle">
+          <strong
+            id="conversationTitle"
+          >
             새로운 아이디어 탐색
           </strong>
 
@@ -954,7 +1208,7 @@
         </div>
 
 
-        <!-- Model selector -->
+        <!-- MODEL SELECTOR -->
 
         <div class="model-wrap">
 
@@ -971,7 +1225,9 @@
               id="modelPill"
             ></span>
 
-            <span id="selectedModelLabel">
+            <span
+              id="selectedModelLabel"
+            >
               GPT-5.6 Luna
             </span>
 
@@ -1001,11 +1257,15 @@
 
               <span>
 
-                <span class="model-name">
+                <span
+                  class="model-name"
+                >
                   GPT-5.6 Luna
                 </span>
 
-                <span class="model-meta">
+                <span
+                  class="model-meta"
+                >
                   OpenAI · 기본 모델
                 </span>
 
@@ -1028,11 +1288,15 @@
 
               <span>
 
-                <span class="model-name">
+                <span
+                  class="model-name"
+                >
                   Gemini 3.1 Flash-Lite
                 </span>
 
-                <span class="model-meta">
+                <span
+                  class="model-meta"
+                >
                   Google · 비교 모델
                 </span>
 
@@ -1041,14 +1305,15 @@
             </button>
 
           </div>
+
         </div>
 
       </header>
 
 
-      <!-- =========================
-           Messages area
-      ========================== -->
+      <!-- =====================================
+           MESSAGE AREA
+      ====================================== -->
 
       <section
         class="messages"
@@ -1150,16 +1415,20 @@
         </div>
 
 
-        <div id="messageList"></div>
+        <div
+          id="messageList"
+        ></div>
 
       </section>
 
 
-      <!-- =========================
-           Composer
-      ========================== -->
+      <!-- =====================================
+           COMPOSER
+      ====================================== -->
 
-      <div class="composer-wrap">
+      <div
+        class="composer-wrap"
+      >
 
         <div class="composer">
 
@@ -1175,6 +1444,7 @@
             <div class="composer-hint">
               Enter 전송 · Shift + Enter 줄바꿈
             </div>
+
 
             <button
               class="send-btn"
@@ -1196,38 +1466,56 @@
   </div>
 
 
-  <!-- =========================
-       JavaScript
-  ========================== -->
+  <!-- =====================================
+       JAVASCRIPT
+  ====================================== -->
 
   <script>
+
+    /* =====================================
+       STATE
+    ====================================== */
+
     const state = {
       model: "GPT-5.6 Luna",
+
       messages: []
     };
 
 
-    /* =========================
-       DOM references
-    ========================== */
+    /* =====================================
+       DOM REFERENCES
+    ====================================== */
 
     const promptInput =
-      document.getElementById("promptInput");
+      document.getElementById(
+        "promptInput"
+      );
 
     const sendBtn =
-      document.getElementById("sendBtn");
+      document.getElementById(
+        "sendBtn"
+      );
 
     const messageList =
-      document.getElementById("messageList");
+      document.getElementById(
+        "messageList"
+      );
 
     const welcome =
-      document.getElementById("welcome");
+      document.getElementById(
+        "welcome"
+      );
 
     const modelButton =
-      document.getElementById("modelButton");
+      document.getElementById(
+        "modelButton"
+      );
 
     const modelMenu =
-      document.getElementById("modelMenu");
+      document.getElementById(
+        "modelMenu"
+      );
 
     const selectedModelLabel =
       document.getElementById(
@@ -1235,13 +1523,19 @@
       );
 
     const modelPill =
-      document.getElementById("modelPill");
+      document.getElementById(
+        "modelPill"
+      );
 
     const newChatBtn =
-      document.getElementById("newChatBtn");
+      document.getElementById(
+        "newChatBtn"
+      );
 
     const clearBtn =
-      document.getElementById("clearBtn");
+      document.getElementById(
+        "clearBtn"
+      );
 
     const conversationTitle =
       document.getElementById(
@@ -1249,12 +1543,13 @@
       );
 
 
-    /* =========================
-       Textarea auto resize
-    ========================== */
+    /* =====================================
+       AUTO RESIZE TEXTAREA
+    ====================================== */
 
     function autoResize() {
-      promptInput.style.height = "auto";
+      promptInput.style.height =
+        "auto";
 
       promptInput.style.height =
         Math.min(
@@ -1264,11 +1559,12 @@
     }
 
 
-    /* =========================
-       Scroll
-    ========================== */
+    /* =====================================
+       SCROLL
+    ====================================== */
 
     function scrollToBottom() {
+
       const container =
         document.getElementById(
           "messages"
@@ -1279,45 +1575,199 @@
     }
 
 
-    /* =========================
-       Add message
-    ========================== */
+    /* =====================================
+       FORMAT RESPONSE TIME
+    ====================================== */
+
+    function formatResponseTime(
+      milliseconds
+    ) {
+
+      if (
+        !Number.isFinite(
+          milliseconds
+        )
+      ) {
+        return "";
+      }
+
+
+      if (
+        milliseconds < 1000
+      ) {
+
+        return `${Math.round(
+          milliseconds
+        )}ms`;
+
+      }
+
+
+      return `${(
+        milliseconds / 1000
+      ).toFixed(2)}초`;
+    }
+
+
+    /* =====================================
+       ADD MESSAGE
+    ====================================== */
 
     function addMessage(
       role,
       text,
-      isError = false
+      options = {}
     ) {
-      welcome.style.display = "none";
+
+      welcome.style.display =
+        "none";
+
 
       const row =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       row.className =
-        "message-row " + role;
+        "message-row " +
+        role;
+
+
+      const bubbleWrap =
+        document.createElement(
+          "div"
+        );
+
+      bubbleWrap.className =
+        "bubble-wrap";
 
 
       const bubble =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       bubble.className =
         "bubble";
 
 
-      if (isError) {
+      if (
+        options.isError
+      ) {
+
         bubble.classList.add(
           "error-bubble"
         );
+
       }
 
 
-      bubble.textContent = text;
+      bubble.textContent =
+        text;
 
 
-      row.appendChild(bubble);
+      bubbleWrap.appendChild(
+        bubble
+      );
 
-      messageList.appendChild(row);
 
+      /*
+       * Assistant 응답인 경우
+       * 응답 시간 표시
+       */
+
+      if (
+        role === "assistant" &&
+        options.responseTime != null
+      ) {
+
+        const meta =
+          document.createElement(
+            "div"
+          );
+
+        meta.className =
+          "message-meta";
+
+
+        if (
+          options.isError
+        ) {
+          meta.classList.add(
+            "error-meta"
+          );
+        }
+
+
+        const responseTime =
+          document.createElement(
+            "span"
+          );
+
+        responseTime.className =
+          "response-time";
+
+
+        const dot =
+          document.createElement(
+            "span"
+          );
+
+        dot.className =
+          "response-dot";
+
+
+        const label =
+          document.createElement(
+            "span"
+          );
+
+
+        const formatted =
+          formatResponseTime(
+            options.responseTime
+          );
+
+
+        label.textContent =
+          `${state.model} · 응답 시간 ${formatted}`;
+
+
+        responseTime.appendChild(
+          dot
+        );
+
+        responseTime.appendChild(
+          label
+        );
+
+
+        meta.appendChild(
+          responseTime
+        );
+
+
+        bubbleWrap.appendChild(
+          meta
+        );
+
+      }
+
+
+      row.appendChild(
+        bubbleWrap
+      );
+
+
+      messageList.appendChild(
+        row
+      );
+
+
+      /*
+       * 대화 기록에는 텍스트만 저장.
+       * 응답 시간 정보는 UI 전용.
+       */
 
       state.messages.push({
         role,
@@ -1329,53 +1779,68 @@
     }
 
 
-    /* =========================
-       Typing indicator
-    ========================== */
+    /* =====================================
+       TYPING INDICATOR
+    ====================================== */
 
     function addTyping() {
-      welcome.style.display = "none";
+
+      welcome.style.display =
+        "none";
+
 
       const row =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
       row.className =
         "message-row assistant";
 
-      row.id = "typingRow";
+      row.id =
+        "typingRow";
 
 
       row.innerHTML = `
-        <div class="bubble">
-          <div class="typing">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div class="bubble-wrap">
+          <div class="bubble">
+            <div class="typing">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
           </div>
         </div>
       `;
 
 
-      messageList.appendChild(row);
+      messageList.appendChild(
+        row
+      );
+
 
       scrollToBottom();
     }
 
 
     function removeTyping() {
+
       document
-        .getElementById("typingRow")
+        .getElementById(
+          "typingRow"
+        )
         ?.remove();
     }
 
 
-    /* =========================
-       Send message
-    ========================== */
+    /* =====================================
+       SEND MESSAGE
+    ====================================== */
 
     async function sendMessage(
       textFromQuick = null
     ) {
+
       const text =
         (
           textFromQuick ??
@@ -1388,16 +1853,29 @@
       }
 
 
-      if (sendBtn.disabled) {
+      if (
+        sendBtn.disabled
+      ) {
         return;
       }
+
+
+      /*
+       * 요청 시작 시간을 기록합니다.
+       * performance.now()는 페이지 내부의
+       * 고정밀 시간 측정에 사용됩니다.
+       */
+
+      const requestStartedAt =
+        performance.now();
 
 
       promptInput.value = "";
 
       autoResize();
 
-      sendBtn.disabled = true;
+      sendBtn.disabled =
+        true;
 
 
       addMessage(
@@ -1405,18 +1883,15 @@
         text
       );
 
+
       addTyping();
 
 
       try {
+
         /*
-         * 현재 선택된 모델과
-         * 전체 대화 내용을 Vercel API로 전달합니다.
-         *
-         * Vercel:
-         *     POST /api/chat
-         *
-         * 서버에서 OPENAI_API_KEY를 사용합니다.
+         * 현재 대화 내용을
+         * Vercel /api/chat으로 보냅니다.
          */
 
         const response =
@@ -1430,64 +1905,117 @@
                   "application/json"
               },
 
-              body: JSON.stringify({
-                model: state.model,
+              body:
+                JSON.stringify({
+                  model:
+                    state.model,
 
-                messages:
-                  state.messages.map(
-                    (message) => ({
-                      role:
-                        message.role,
+                  messages:
+                    state.messages.map(
+                      (message) => ({
+                        role:
+                          message.role,
 
-                      content:
-                        message.text
-                    })
-                  )
-              })
+                        content:
+                          message.text
+                      })
+                    )
+                })
             }
           );
 
 
+        /*
+         * 응답을 받은 시점을 기록합니다.
+         */
+
+        const responseReceivedAt =
+          performance.now();
+
+
+        /*
+         * 브라우저 기준 전체 요청 시간
+         */
+
+        const elapsedMs =
+          responseReceivedAt -
+          requestStartedAt;
+
+
         let data = null;
 
+
         try {
+
           data =
             await response.json();
+
         } catch (jsonError) {
+
           throw new Error(
             "서버에서 올바른 JSON 응답을 받지 못했습니다."
           );
+
         }
 
 
         removeTyping();
 
 
-        if (!response.ok) {
+        if (
+          !response.ok
+        ) {
+
           throw new Error(
             data?.error ||
             `API 요청 실패 (${response.status})`
           );
+
         }
 
 
         if (
           !data ||
-          typeof data.answer !== "string"
+          typeof data.answer !==
+            "string"
         ) {
+
           throw new Error(
             "AI 응답을 찾을 수 없습니다."
           );
+
         }
 
 
+        /*
+         * 실제 AI 답변 출력
+         * + 실제 요청에 걸린 시간 표시
+         */
+
         addMessage(
           "assistant",
-          data.answer
+          data.answer,
+          {
+            responseTime:
+              elapsedMs
+          }
         );
 
+
       } catch (error) {
+
+        /*
+         * 오류가 난 경우에도
+         * 얼마나 걸렸는지 보여줍니다.
+         */
+
+        const errorElapsedMs =
+          performance.now() -
+          requestStartedAt;
+
+
         removeTyping();
+
 
         console.error(
           "Chat request error:",
@@ -1498,39 +2026,51 @@
         addMessage(
           "assistant",
           "오류가 발생했습니다.\n\n" +
-          (
-            error?.message ||
-            "알 수 없는 오류"
-          ),
-          true
+            (
+              error?.message ||
+              "알 수 없는 오류"
+            ),
+          {
+            isError: true,
+
+            responseTime:
+              errorElapsedMs
+          }
         );
 
+
       } finally {
-        sendBtn.disabled = false;
+
+        sendBtn.disabled =
+          false;
 
         promptInput.focus();
       }
     }
 
 
-    /* =========================
-       Model menu
-    ========================== */
+    /* =====================================
+       MODEL MENU
+    ====================================== */
 
     modelButton.addEventListener(
       "click",
       (event) => {
+
         event.stopPropagation();
+
 
         const isOpen =
           modelMenu.classList.toggle(
             "open"
           );
 
+
         modelButton.setAttribute(
           "aria-expanded",
           String(isOpen)
         );
+
       }
     );
 
@@ -1538,6 +2078,7 @@
     document.addEventListener(
       "click",
       (event) => {
+
         if (
           !modelButton.contains(
             event.target
@@ -1546,115 +2087,140 @@
             event.target
           )
         ) {
+
           modelMenu.classList.remove(
             "open"
           );
+
 
           modelButton.setAttribute(
             "aria-expanded",
             "false"
           );
+
         }
+
       }
     );
 
 
-    /* =========================
-       Model selection
-    ========================== */
+    /* =====================================
+       MODEL SELECTION
+    ====================================== */
 
     document
       .querySelectorAll(
         ".model-option"
       )
-      .forEach((option) => {
+      .forEach(
+        (option) => {
 
-        option.addEventListener(
-          "click",
-          () => {
+          option.addEventListener(
+            "click",
+            () => {
 
-            state.model =
-              option.dataset.model;
-
-
-            selectedModelLabel.textContent =
-              state.model;
+              state.model =
+                option.dataset.model;
 
 
-            modelPill.style.background =
-              option.dataset.color;
+              selectedModelLabel
+                .textContent =
+                state.model;
 
 
-            modelPill.style.boxShadow =
-              `0 0 0 4px ${option.dataset.color}22`;
+              modelPill.style
+                .background =
+                option.dataset.color;
 
 
-            document
-              .querySelectorAll(
-                ".model-option"
-              )
-              .forEach((x) => {
-                x.classList.remove(
-                  "selected"
+              modelPill.style
+                .boxShadow =
+                `0 0 0 4px ${
+                  option.dataset.color
+                }22`;
+
+
+              document
+                .querySelectorAll(
+                  ".model-option"
+                )
+                .forEach(
+                  (x) => {
+
+                    x.classList
+                      .remove(
+                        "selected"
+                      );
+
+                  }
                 );
-              });
 
 
-            option.classList.add(
-              "selected"
-            );
+              option.classList.add(
+                "selected"
+              );
 
 
-            modelMenu.classList.remove(
-              "open"
-            );
+              modelMenu.classList
+                .remove("open");
 
 
-            modelButton.setAttribute(
-              "aria-expanded",
-              "false"
-            );
-          }
-        );
+              modelButton.setAttribute(
+                "aria-expanded",
+                "false"
+              );
 
-      });
+            }
+          );
+
+        }
+      );
 
 
-    /* =========================
-       Quick prompts
-    ========================== */
+    /* =====================================
+       QUICK PROMPTS
+    ====================================== */
 
     document
-      .querySelectorAll(".quick")
-      .forEach((button) => {
+      .querySelectorAll(
+        ".quick"
+      )
+      .forEach(
+        (button) => {
 
-        button.addEventListener(
-          "click",
-          () => {
-            sendMessage(
-              button.dataset.prompt
-            );
-          }
-        );
+          button.addEventListener(
+            "click",
+            () => {
 
-      });
+              sendMessage(
+                button.dataset
+                  .prompt
+              );
+
+            }
+          );
+
+        }
+      );
 
 
-    /* =========================
-       Send button
-    ========================== */
+    /* =====================================
+       SEND BUTTON
+    ====================================== */
 
     sendBtn.addEventListener(
       "click",
       () => {
+
         sendMessage();
+
       }
     );
 
 
-    /* =========================
-       Textarea input
-    ========================== */
+    /* =====================================
+       INPUT
+    ====================================== */
 
     promptInput.addEventListener(
       "input",
@@ -1662,9 +2228,9 @@
     );
 
 
-    /* =========================
-       Enter / Shift + Enter
-    ========================== */
+    /* =====================================
+       ENTER / SHIFT + ENTER
+    ====================================== */
 
     promptInput.addEventListener(
       "keydown",
@@ -1674,27 +2240,34 @@
           event.key === "Enter" &&
           !event.shiftKey
         ) {
+
           event.preventDefault();
 
           sendMessage();
+
         }
 
       }
     );
 
 
-    /* =========================
-       Reset chat
-    ========================== */
+    /* =====================================
+       RESET CHAT
+    ====================================== */
 
     function resetChat() {
+
       state.messages = [];
 
-      messageList.innerHTML = "";
+      messageList.innerHTML =
+        "";
 
-      welcome.style.display = "";
+      welcome.style.display =
+        "";
 
-      promptInput.value = "";
+
+      promptInput.value =
+        "";
 
       autoResize();
 
@@ -1706,7 +2279,9 @@
       removeTyping();
 
 
-      sendBtn.disabled = false;
+      sendBtn.disabled =
+        false;
+
 
       promptInput.focus();
 
@@ -1727,13 +2302,15 @@
     );
 
 
-    /* =========================
-       Initial state
-    ========================== */
+    /* =====================================
+       INITIALIZE
+    ====================================== */
 
     autoResize();
 
     promptInput.focus();
+
   </script>
+
 </body>
 </html>
