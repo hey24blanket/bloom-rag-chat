@@ -1,4 +1,19 @@
-firebase-admin
-@google/genai
-openai
-express
+{
+  "name": "bloom-rag-chat",
+  "version": "1.0.0",
+  "private": true,
+  "description": "사주그랩 기술 백서 기반 RAG 챗봇",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.0.0",
+    "openai": "^5.0.0"
+  }
+}
