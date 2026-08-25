@@ -8,11 +8,9 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: #f4f6f8; display: flex; flex-direction: column; height: 100vh; }
     
-    /* 헤더 */
     header { background: #1e293b; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
     header h1 { font-size: 1.2rem; }
     
-    /* 헤더 우측 컨트롤 (뱃지 + ⚙️ 아이콘) */
     .header-controls { display: flex; align-items: center; gap: 12px; }
     .model-badge { font-size: 0.78rem; color: #94a3b8; background: #334155; padding: 4px 10px; border-radius: 12px; border: 1px solid #475569; }
     .icon-btn { background: none; border: none; color: white; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; }
@@ -26,7 +24,6 @@
     input[type="text"] { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; outline: none; }
     button.send-btn { padding: 12px 24px; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
 
-    /* 모달 */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
     .modal-overlay.active { display: flex; }
     .modal-content { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 550px; display: flex; flex-direction: column; gap: 18px; max-height: 90vh; overflow-y: auto; }
@@ -52,7 +49,6 @@
   <header>
     <h1>✨ 사주그랩 백서 RAG 챗봇</h1>
     <div class="header-controls">
-      <!-- 선택된 모델 뱃지 표시 -->
       <span class="model-badge" id="header-model-badge">로딩 중...</span>
       <button class="icon-btn" id="open-settings-btn" title="설정">⚙️</button>
     </div>
@@ -67,7 +63,6 @@
     <button type="submit" class="send-btn">전송</button>
   </form>
 
-  <!-- 설정 모달 -->
   <div class="modal-overlay" id="settings-modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -142,7 +137,6 @@
       return msgDiv;
     }
 
-    // 헤더 뱃지 텍스트 갱신
     function updateHeaderBadge(modelValue) {
       headerModelBadge.innerText = MODEL_NAMES[modelValue] || modelValue;
     }
@@ -164,14 +158,10 @@
           body: JSON.stringify({ message: query })
         });
         
-        const contentType = res.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          const htmlText = await res.text();
-          throw new Error(`서버 응답 오류 (HTTP ${res.status})`);
-        }
-
         const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        if (!res.ok || data.error) {
+          throw new Error(data.error || `서버 에러 (${res.status})`);
+        }
 
         loadingMsg.innerText = data.answer || '답변을 가져올 수 없습니다.';
       } catch (err) {
@@ -193,13 +183,12 @@
         if (targetRadio) {
           targetRadio.checked = true;
         } else {
-          document.querySelector('input[name="cfg-model"]').checked = true;
+          document.querySelector(`input[name="cfg-model"][value="${DEFAULT_CONFIG.model}"]`).checked = true;
         }
 
         updateHeaderBadge(selectedModel);
       } catch (err) {
-        console.error('설정 로드 실패:', err);
-        updateHeaderBadge(DEFAULT_CONFIG.model);
+        console.error('설정 불러오기 실패:', err);
       }
     }
 
@@ -208,7 +197,7 @@
       const selectedModel = selectedModelRadio ? selectedModelRadio.value : DEFAULT_CONFIG.model;
       
       const updatedConfig = {
-        systemPrompt: document.getElementById('cfg-sysprompt').value,
+        systemPrompt: document.getElementById('cfg-sysprompt').value || DEFAULT_CONFIG.systemPrompt,
         model: selectedModel,
         limit: parseInt(document.getElementById('cfg-limit').value, 10) || DEFAULT_CONFIG.limit,
         temperature: parseFloat(document.getElementById('cfg-temp').value) ?? DEFAULT_CONFIG.temperature
@@ -227,14 +216,21 @@
       }
     }
 
-    // 초기 실행 시 설정값 및 헤더 뱃지 로드
+    // 페이지 접속 시 설정 로드
     loadSettings();
 
-    openSettingsBtn.addEventListener('click', () => {
-      loadSettings();
+    // 톱니바퀴 클릭 시 모달 열고 설정 새로 로드
+    openSettingsBtn.addEventListener('click', async () => {
+      await loadSettings();
       modal.classList.add('active');
     });
-    closeModalBtn.addEventListener('click', saveSettings);
+
+    // ✕ 버튼은 단순 창 닫기 (저장 안 함)
+    closeModalBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+
+    // 저장 버튼만 저장 수행
     saveSettingsBtn.addEventListener('click', saveSettings);
   </script>
 </body>
