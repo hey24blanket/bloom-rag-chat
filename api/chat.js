@@ -9,28 +9,21 @@ const OpenAI = require('openai');
  * --------------------------------------------------------------------------
  */
 
-// Firebase에 이미 저장된 백서 embedding과 동일한 공간을 사용해야 합니다.
+// 현재 Firebase knowledge_chunks의 embedding과 동일하게 유지
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 const EMBEDDING_DIMENSIONS = 768;
 
-// 실제 사용할 답변 모델
+// 실제 답변 모델
 const MODELS = {
   gemini: 'gemini-3.1-flash-lite',
   gpt: 'gpt-5.6-luna',
 };
 
-// Firestore 검색 설정
+// 검색 설정
 const DEFAULT_TOP_K = 5;
-
-// COSINE distance는 작을수록 더 유사합니다.
-// 지나치게 먼 문서를 context에 넣지 않기 위한 초기값입니다.
-// 실제 서비스 데이터로 테스트하면서 조정합니다.
 const DEFAULT_DISTANCE_THRESHOLD = 0.70;
 
-// 답변 생성 기본 설정
-const DEFAULT_TEMPERATURE = 0.2;
-
-// 서버가 통제하는 시스템 지침
+// 서버가 관리하는 시스템 프롬프트
 const SYSTEM_PROMPT = `
 너는 "사주그랩 기술 백서"를 근거로 답변하는 RAG(검색증강생성) 어시스턴트다.
 
@@ -38,11 +31,10 @@ const SYSTEM_PROMPT = `
 
 1. 제공된 [백서 근거]를 가장 중요한 사실 근거로 사용한다.
 2. 백서 근거에 없는 내용을 사실처럼 만들어내지 않는다.
-3. 근거가 충분하지 않으면 "제공된 백서에서 확인할 수 없습니다."라고 명확히 말한다.
-4. 숫자, 공식, 가중치, 구조, 알고리즘 설명은 백서의 표현과 의미를 최대한 유지한다.
-5. 일반적인 상식이나 외부 지식을 보충해서 답할 경우, 백서에 직접 적힌 내용과 구분한다.
-6. 질문에 직접 답하고, 불필요한 장황한 설명은 피한다.
-7. 검색된 백서 근거를 바탕으로 답변하되, 검색 결과 자체를 사용자에게 그대로 장황하게 복사하지 않는다.
+3. 근거가 충분하지 않으면 "제공된 백서에서 확인할 수 없습니다."라고 명확하게 답한다.
+4. 숫자, 공식, 가중치, 알고리즘, 구조에 관한 내용은 백서의 의미를 임의로 변경하지 않는다.
+5. 백서에 없는 일반 지식을 덧붙일 경우 백서의 내용과 구분한다.
+6. 질문에 직접 답하고 불필요하게 장황하게 설명하지 않는다.
 `.trim();
 
 /**
@@ -57,15 +49,14 @@ function getDb() {
 
     if (!rawEnv) {
       throw new Error(
-        "Vercel 환경변수 'FIREBASE_SERVICE_ACCOUNT'가 설정되지 않았습니다."
+        "FIREBASE_SERVICE_ACCOUNT 환경변수가 설정되지 않았습니다."
       );
     }
 
     let serviceAccount;
 
     try {
-      serviceAccount =
-        typeof rawEnv === 'string' ? JSON.parse(rawEnv) : rawEnv;
+      serviceAccount = JSON.parse(rawEnv);
     } catch (error) {
       throw new Error(
         `FIREBASE_SERVICE_ACCOUNT JSON 파싱 실패: ${error.message}`
@@ -73,21 +64,25 @@ function getDb() {
     }
 
     if (!serviceAccount.project_id) {
-      throw new Error('Firebase service account에 project_id가 없습니다.');
+      throw new Error(
+        'Firebase service account에 project_id가 없습니다.'
+      );
     }
 
     if (!serviceAccount.client_email) {
-      throw new Error('Firebase service account에 client_email이 없습니다.');
+      throw new Error(
+        'Firebase service account에 client_email이 없습니다.'
+      );
     }
 
     if (!serviceAccount.private_key) {
-      throw new Error('Firebase service account에 private_key가 없습니다.');
+      throw new Error(
+        'Firebase service account에 private_key가 없습니다.'
+      );
     }
 
-    serviceAccount.private_key = serviceAccount.private_key.replace(
-      /\\n/g,
-      '\n'
-    );
+    serviceAccount.private_key =
+      serviceAccount.private_key.replace(/\\n/g, '\n');
 
     initializeApp({
       credential: cert(serviceAccount),
@@ -115,7 +110,9 @@ function parseBody(req) {
   try {
     return JSON.parse(req.body);
   } catch {
-    throw new Error('요청 body가 유효한 JSON이 아닙니다.');
+    throw new Error(
+      '요청 body가 유효한 JSON이 아닙니다.'
+    );
   }
 }
 
@@ -130,9 +127,10 @@ function normalizeUserQuery(value) {
     throw new Error('질문을 입력해주세요.');
   }
 
-  // 지나치게 큰 요청 방지
   if (query.length > 10000) {
-    throw new Error('질문이 너무 깁니다. 10,000자 이하로 입력해주세요.');
+    throw new Error(
+      '질문이 너무 깁니다. 10,000자 이하로 입력해주세요.'
+    );
   }
 
   return query;
@@ -143,16 +141,22 @@ function normalizeModel(value) {
     return MODELS.gemini;
   }
 
-  if (value === MODELS.gemini || value === 'gemini') {
+  if (
+    value === 'gemini' ||
+    value === MODELS.gemini
+  ) {
     return MODELS.gemini;
   }
 
-  if (value === MODELS.gpt || value === 'gpt') {
+  if (
+    value === 'gpt' ||
+    value === MODELS.gpt
+  ) {
     return MODELS.gpt;
   }
 
   throw new Error(
-    `지원하지 않는 모델입니다. 사용 가능 모델: ${MODELS.gemini}, ${MODELS.gpt}`
+    `지원하지 않는 모델입니다: ${value}`
   );
 }
 
@@ -163,25 +167,18 @@ function normalizeTopK(value) {
     return DEFAULT_TOP_K;
   }
 
-  return Math.min(Math.max(Math.floor(parsed), 1), 10);
-}
-
-function normalizeTemperature(value) {
-  if (value === undefined || value === null || value === '') {
-    return DEFAULT_TEMPERATURE;
-  }
-
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed)) {
-    return DEFAULT_TEMPERATURE;
-  }
-
-  return Math.min(Math.max(parsed, 0), 1);
+  return Math.min(
+    Math.max(Math.floor(parsed), 1),
+    10
+  );
 }
 
 function normalizeDistanceThreshold(value) {
-  if (value === undefined || value === null || value === '') {
+  if (
+    value === undefined ||
+    value === null ||
+    value === ''
+  ) {
     return DEFAULT_DISTANCE_THRESHOLD;
   }
 
@@ -191,20 +188,31 @@ function normalizeDistanceThreshold(value) {
     return DEFAULT_DISTANCE_THRESHOLD;
   }
 
-  // COSINE distance의 일반적인 범위는 0~2입니다.
-  return Math.min(Math.max(parsed, 0), 2);
+  return Math.min(
+    Math.max(parsed, 0),
+    2
+  );
 }
 
 /**
  * --------------------------------------------------------------------------
- * Gemini 임베딩
+ * 질문 임베딩
+ * --------------------------------------------------------------------------
+ *
+ * 백서 embedding과 동일:
+ * gemini-embedding-001 / 768차원
+ *
  * --------------------------------------------------------------------------
  */
 
-async function createQueryEmbedding(userQuery, geminiKey) {
+async function createQueryEmbedding(
+  userQuery,
+  geminiKey
+) {
   const url =
     `https://generativelanguage.googleapis.com/v1beta/` +
-    `models/${EMBEDDING_MODEL}:embedContent?key=${encodeURIComponent(geminiKey)}`;
+    `models/${EMBEDDING_MODEL}:embedContent` +
+    `?key=${encodeURIComponent(geminiKey)}`;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -213,7 +221,11 @@ async function createQueryEmbedding(userQuery, geminiKey) {
     },
     body: JSON.stringify({
       content: {
-        parts: [{ text: userQuery }],
+        parts: [
+          {
+            text: userQuery,
+          },
+        ],
       },
       outputDimensionality: EMBEDDING_DIMENSIONS,
     }),
@@ -223,9 +235,12 @@ async function createQueryEmbedding(userQuery, geminiKey) {
 
   if (!response.ok) {
     const apiMessage =
-      data?.error?.message || JSON.stringify(data);
+      data?.error?.message ||
+      JSON.stringify(data);
 
-    throw new Error(`Gemini 임베딩 API 오류: ${apiMessage}`);
+    throw new Error(
+      `Gemini 임베딩 API 오류: ${apiMessage}`
+    );
   }
 
   const values = data?.embedding?.values;
@@ -239,7 +254,8 @@ async function createQueryEmbedding(userQuery, geminiKey) {
   if (values.length !== EMBEDDING_DIMENSIONS) {
     throw new Error(
       `임베딩 차원이 맞지 않습니다. ` +
-      `예상=${EMBEDDING_DIMENSIONS}, 실제=${values.length}`
+      `예상=${EMBEDDING_DIMENSIONS}, ` +
+      `실제=${values.length}`
     );
   }
 
@@ -258,96 +274,128 @@ async function retrieveKnowledge(
   topK,
   distanceThreshold
 ) {
-  const vectorQuery = db.collection('knowledge_chunks').findNearest({
-    vectorField: 'embedding',
-    queryVector: FieldValue.vector(queryVector),
-    limit: topK,
-    distanceMeasure: 'COSINE',
-    distanceResultField: 'vector_distance',
-  });
+  const vectorQuery =
+    db.collection('knowledge_chunks').findNearest({
+      vectorField: 'embedding',
+      queryVector: FieldValue.vector(queryVector),
+      limit: topK,
+      distanceMeasure: 'COSINE',
+      distanceResultField: 'vector_distance',
+    });
 
-  const snapshot = await vectorQuery.get();
+  const snapshot =
+    await vectorQuery.get();
 
-  const results = snapshot.docs
-    .map((doc) => {
-      const data = doc.data();
+  const searched =
+    snapshot.docs
+      .map((doc) => {
+        const data = doc.data();
 
-      return {
-        id: doc.id,
-        text: typeof data.text === 'string' ? data.text : '',
-        source: data.source || null,
-        chunk_index:
-          typeof data.chunk_index === 'number'
-            ? data.chunk_index
-            : null,
-        distance:
-          typeof data.vector_distance === 'number'
-            ? data.vector_distance
-            : null,
-      };
-    })
-    .filter((item) => item.text);
+        return {
+          id: doc.id,
 
-  // COSINE: distance가 작을수록 유사
-  const filtered = results.filter((item) => {
-    if (item.distance === null) {
-      // 예상치 못하게 distance가 반환되지 않으면
-      // 일단 검색 결과를 살려둡니다.
-      return true;
-    }
+          text:
+            typeof data.text === 'string'
+              ? data.text
+              : '',
 
-    return item.distance <= distanceThreshold;
-  });
+          source:
+            data.source || null,
+
+          chunk_index:
+            typeof data.chunk_index === 'number'
+              ? data.chunk_index
+              : null,
+
+          distance:
+            typeof data.vector_distance === 'number'
+              ? data.vector_distance
+              : null,
+        };
+      })
+      .filter((item) => item.text);
+
+  // COSINE distance는 낮을수록 유사
+  const matched =
+    searched.filter((item) => {
+      if (item.distance === null) {
+        return true;
+      }
+
+      return (
+        item.distance <=
+        distanceThreshold
+      );
+    });
 
   return {
-    searched: results,
-    matched: filtered,
+    searched,
+    matched,
   };
 }
 
 /**
  * --------------------------------------------------------------------------
- * RAG context 구성
+ * RAG Context
  * --------------------------------------------------------------------------
  */
 
 function buildContext(chunks) {
   if (!chunks.length) {
-    return '[백서 근거]\n관련 백서 청크를 찾지 못했습니다.';
+    return (
+      '[백서 근거]\n' +
+      '관련 백서 청크를 찾지 못했습니다.'
+    );
   }
 
-  const sections = chunks.map((chunk, index) => {
-    const metadata = [
-      `청크 ${index + 1}`,
-      chunk.source ? `source=${chunk.source}` : null,
-      chunk.chunk_index !== null
-        ? `chunk_index=${chunk.chunk_index}`
-        : null,
-      chunk.distance !== null
-        ? `cosine_distance=${chunk.distance.toFixed(6)}`
-        : null,
-    ]
-      .filter(Boolean)
-      .join(' | ');
+  return chunks
+    .map((chunk, index) => {
+      const metadata = [
+        `청크 ${index + 1}`,
 
-    return `[${metadata}]\n${chunk.text}`;
-  });
+        chunk.source
+          ? `source=${chunk.source}`
+          : null,
 
-  return `[백서 근거]\n\n${sections.join('\n\n--- 백서 청크 구분 ---\n\n')}`;
+        chunk.chunk_index !== null
+          ? `chunk_index=${chunk.chunk_index}`
+          : null,
+
+        chunk.distance !== null
+          ? `cosine_distance=${chunk.distance.toFixed(6)}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
+      return (
+        `[${metadata}]\n` +
+        chunk.text
+      );
+    })
+    .join(
+      '\n\n--- 백서 청크 구분 ---\n\n'
+    );
 }
 
-function buildUserPrompt(userQuery, retrievedChunks) {
-  const context = buildContext(retrievedChunks);
-
+function buildUserPrompt(
+  userQuery,
+  retrievedChunks
+) {
   return `
-${context}
+[백서 근거]
+
+${buildContext(retrievedChunks)}
 
 [사용자 질문]
+
 ${userQuery}
 
 [답변 지침]
+
 위 백서 근거를 바탕으로 질문에 답변하라.
-근거가 충분하지 않으면 "제공된 백서에서 확인할 수 없습니다."라고 답하라.
+근거가 충분하지 않으면
+"제공된 백서에서 확인할 수 없습니다."라고 답하라.
 `.trim();
 }
 
@@ -359,26 +407,32 @@ ${userQuery}
 
 async function generateGeminiAnswer(
   prompt,
-  geminiKey,
-  temperature
+  geminiKey
 ) {
-  const ai = new GoogleGenAI({
-    apiKey: geminiKey,
-  });
+  const ai =
+    new GoogleGenAI({
+      apiKey: geminiKey,
+    });
 
-  const response = await ai.models.generateContent({
-    model: MODELS.gemini,
-    contents: prompt,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature,
-    },
-  });
+  const response =
+    await ai.models.generateContent({
+      model: MODELS.gemini,
 
-  const answer = response?.text?.trim();
+      contents: prompt,
+
+      config: {
+        systemInstruction:
+          SYSTEM_PROMPT,
+      },
+    });
+
+  const answer =
+    response?.text?.trim();
 
   if (!answer) {
-    throw new Error('Gemini가 빈 답변을 반환했습니다.');
+    throw new Error(
+      'Gemini가 빈 답변을 반환했습니다.'
+    );
   }
 
   return answer;
@@ -388,28 +442,43 @@ async function generateGeminiAnswer(
  * --------------------------------------------------------------------------
  * GPT-5.6 Luna 답변
  * --------------------------------------------------------------------------
+ *
+ * temperature 사용 안 함.
+ * GPT-5.6 reasoning.effort 사용.
+ * --------------------------------------------------------------------------
  */
 
 async function generateGptAnswer(
   prompt,
-  openaiKey,
-  temperature
+  openaiKey
 ) {
-  const openai = new OpenAI({
-    apiKey: openaiKey,
-  });
+  const openai =
+    new OpenAI({
+      apiKey: openaiKey,
+    });
 
-  const response = await openai.responses.create({
-    model: MODELS.gpt,
-    instructions: SYSTEM_PROMPT,
-    input: prompt,
-    temperature,
-  });
+  const response =
+    await openai.responses.create({
+      model: MODELS.gpt,
 
-  const answer = response?.output_text?.trim();
+      instructions:
+        SYSTEM_PROMPT,
+
+      input:
+        prompt,
+
+      reasoning: {
+        effort: 'medium',
+      },
+    });
+
+  const answer =
+    response?.output_text?.trim();
 
   if (!answer) {
-    throw new Error('GPT-5.6 Luna가 빈 답변을 반환했습니다.');
+    throw new Error(
+      'GPT-5.6 Luna가 빈 답변을 반환했습니다.'
+    );
   }
 
   return answer;
@@ -417,127 +486,185 @@ async function generateGptAnswer(
 
 /**
  * --------------------------------------------------------------------------
- * 메인 API
+ * Main API
  * --------------------------------------------------------------------------
  */
 
-module.exports = async (req, res) => {
+module.exports = async (
+  req,
+  res
+) => {
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({
-      error: 'Method not allowed',
-    });
+    res.setHeader(
+      'Allow',
+      'POST'
+    );
+
+    return res
+      .status(405)
+      .json({
+        error:
+          'Method not allowed',
+      });
   }
 
   try {
-    const body = parseBody(req);
+    const body =
+      parseBody(req);
 
-    const userQuery = normalizeUserQuery(body.message);
+    const userQuery =
+      normalizeUserQuery(
+        body.message
+      );
 
-    // 브라우저가 보내는 config 중 모델/검색 개수/temperature만 허용합니다.
-    // systemPrompt는 절대 클라이언트 값을 신뢰하지 않습니다.
-    const selectedModel = normalizeModel(body.model);
+    const selectedModel =
+      normalizeModel(
+        body.model
+      );
 
-    const topK = normalizeTopK(body.topK);
-    const temperature = normalizeTemperature(body.temperature);
-    const distanceThreshold = normalizeDistanceThreshold(
-      body.distanceThreshold
-    );
+    const topK =
+      normalizeTopK(
+        body.topK
+      );
 
-    const geminiKey = process.env.GEMINI_API_KEY;
+    const distanceThreshold =
+      normalizeDistanceThreshold(
+        body.distanceThreshold
+      );
+
+    const geminiKey =
+      process.env.GEMINI_API_KEY;
 
     if (!geminiKey) {
-      return res.status(500).json({
-        error:
-          "서버 환경변수 'GEMINI_API_KEY'가 설정되지 않았습니다.",
-      });
+      return res
+        .status(500)
+        .json({
+          error:
+            "GEMINI_API_KEY 환경변수가 설정되지 않았습니다.",
+        });
     }
 
-    if (selectedModel === MODELS.gpt && !process.env.OPENAI_API_KEY) {
-      return res.status(500).json({
-        error:
-          "서버 환경변수 'OPENAI_API_KEY'가 설정되지 않았습니다.",
-      });
+    if (
+      selectedModel === MODELS.gpt &&
+      !process.env.OPENAI_API_KEY
+    ) {
+      return res
+        .status(500)
+        .json({
+          error:
+            "OPENAI_API_KEY 환경변수가 설정되지 않았습니다.",
+        });
     }
 
-    const db = getDb();
+    const db =
+      getDb();
 
     /**
-     * 1. 질문 embedding
-     *
-     * 백서 embedding과 반드시 동일:
-     * gemini-embedding-001 / 768차원
+     * 1. 질문 임베딩
      */
-    const queryVector = await createQueryEmbedding(
-      userQuery,
-      geminiKey
-    );
+    const queryVector =
+      await createQueryEmbedding(
+        userQuery,
+        geminiKey
+      );
 
     /**
      * 2. Firestore vector search
      */
-    const retrieval = await retrieveKnowledge(
-      db,
-      queryVector,
-      topK,
-      distanceThreshold
-    );
+    const retrieval =
+      await retrieveKnowledge(
+        db,
+        queryVector,
+        topK,
+        distanceThreshold
+      );
 
     /**
      * 3. RAG prompt
      */
-    const prompt = buildUserPrompt(
-      userQuery,
-      retrieval.matched
-    );
+    const prompt =
+      buildUserPrompt(
+        userQuery,
+        retrieval.matched
+      );
 
     /**
-     * 4. 선택한 LLM으로 답변 생성
+     * 4. LLM
      */
     let answer;
 
-    if (selectedModel === MODELS.gpt) {
-      answer = await generateGptAnswer(
-        prompt,
-        process.env.OPENAI_API_KEY,
-        temperature
-      );
+    if (
+      selectedModel === MODELS.gpt
+    ) {
+      answer =
+        await generateGptAnswer(
+          prompt,
+          process.env.OPENAI_API_KEY
+        );
     } else {
-      answer = await generateGeminiAnswer(
-        prompt,
-        geminiKey,
-        temperature
-      );
+      answer =
+        await generateGeminiAnswer(
+          prompt,
+          geminiKey
+        );
     }
 
     /**
-     * 5. 클라이언트에 답변 + 검색 근거 일부 반환
+     * 5. 결과 반환
      */
-    return res.status(200).json({
-      answer,
-      model: selectedModel,
-      retrieval: {
-        topK,
-        distanceThreshold,
-        searchedCount: retrieval.searched.length,
-        matchedCount: retrieval.matched.length,
-        chunks: retrieval.matched.map((chunk) => ({
-          id: chunk.id,
-          source: chunk.source,
-          chunk_index: chunk.chunk_index,
-          distance: chunk.distance,
-          text: chunk.text,
-        })),
-      },
-    });
+    return res
+      .status(200)
+      .json({
+        answer,
+
+        model:
+          selectedModel,
+
+        retrieval: {
+          topK,
+
+          distanceThreshold,
+
+          searchedCount:
+            retrieval.searched.length,
+
+          matchedCount:
+            retrieval.matched.length,
+
+          chunks:
+            retrieval.matched.map(
+              (chunk) => ({
+                id:
+                  chunk.id,
+
+                source:
+                  chunk.source,
+
+                chunk_index:
+                  chunk.chunk_index,
+
+                distance:
+                  chunk.distance,
+
+                text:
+                  chunk.text,
+              })
+            ),
+        },
+      });
+
   } catch (error) {
-    console.error('RAG API Error:', error);
+    console.error(
+      'RAG API Error:',
+      error
+    );
 
-    const message =
-      error?.message || '서버 내부 오류가 발생했습니다.';
-
-    return res.status(500).json({
-      error: message,
-    });
+    return res
+      .status(500)
+      .json({
+        error:
+          error?.message ||
+          '서버 내부 오류가 발생했습니다.',
+      });
   }
 };
