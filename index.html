@@ -1,32 +1,51 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>사주그랩 백서 RAG 챗봇</title>
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    사주그랩 백서 RAG 챗봇
+  </title>
 
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+      font-family:
+        'Segoe UI',
+        Tahoma,
+        Geneva,
+        Verdana,
+        sans-serif;
     }
 
     body {
       background-color: #f4f6f8;
+
       display: flex;
       flex-direction: column;
+
       height: 100vh;
     }
 
     header {
       background: #1e293b;
       color: white;
+
       padding: 15px 20px;
+
       display: flex;
       justify-content: space-between;
       align-items: center;
+
       gap: 15px;
     }
 
@@ -37,110 +56,161 @@
     .header-controls {
       display: flex;
       align-items: center;
+
       gap: 12px;
     }
 
     .model-badge {
       font-size: 0.78rem;
+
       color: #cbd5e1;
       background: #334155;
+
       padding: 5px 10px;
+
       border-radius: 12px;
+
       border: 1px solid #475569;
+
       white-space: nowrap;
     }
 
     .icon-btn {
       background: none;
       border: none;
+
       color: white;
+
       font-size: 1.4rem;
+
       cursor: pointer;
+
       display: flex;
       align-items: center;
     }
 
     #chat-container {
       flex: 1;
+
       overflow-y: auto;
+
       padding: 20px;
+
       display: flex;
       flex-direction: column;
+
       gap: 15px;
     }
 
     .message {
       max-width: 85%;
+
       padding: 12px 16px;
+
       border-radius: 12px;
+
       line-height: 1.55;
+
       white-space: pre-wrap;
+
       word-break: break-word;
     }
 
     .user {
       align-self: flex-end;
+
       background: #2563eb;
       color: white;
+
       border-bottom-right-radius: 2px;
     }
 
     .ai {
       align-self: flex-start;
+
       background: white;
+
       color: #1e293b;
+
       border-bottom-left-radius: 2px;
+
       border: 1px solid #e2e8f0;
     }
 
     .message-meta {
       margin-top: 10px;
+
       padding-top: 8px;
-      border-top: 1px solid #e2e8f0;
+
+      border-top:
+        1px solid #e2e8f0;
+
       font-size: 0.75rem;
+
       color: #64748b;
     }
 
     .sources {
       margin-top: 8px;
+
       display: flex;
       flex-direction: column;
+
       gap: 6px;
     }
 
     .source-item {
       background: #f8fafc;
-      border: 1px solid #e2e8f0;
+
+      border:
+        1px solid #e2e8f0;
+
       border-radius: 6px;
+
       padding: 7px 9px;
+
       font-size: 0.75rem;
+
       color: #475569;
     }
 
     .source-item summary {
       cursor: pointer;
+
       font-weight: 600;
     }
 
     .source-text {
       margin-top: 7px;
+
       line-height: 1.45;
+
       white-space: pre-wrap;
     }
 
     #input-container {
       padding: 15px 20px;
+
       background: white;
+
       display: flex;
+
       gap: 10px;
-      border-top: 1px solid #e2e8f0;
+
+      border-top:
+        1px solid #e2e8f0;
     }
 
     input[type="text"] {
       flex: 1;
+
       padding: 12px;
-      border: 1px solid #cbd5e1;
+
+      border:
+        1px solid #cbd5e1;
+
       border-radius: 8px;
+
       outline: none;
     }
 
@@ -150,30 +220,44 @@
 
     button.send-btn {
       padding: 12px 24px;
+
       background: #2563eb;
       color: white;
+
       border: none;
+
       border-radius: 8px;
+
       cursor: pointer;
+
       font-weight: bold;
     }
 
     button.send-btn:disabled {
       opacity: 0.6;
+
       cursor: wait;
     }
 
     .modal-overlay {
       display: none;
+
       position: fixed;
+
       top: 0;
       left: 0;
+
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.5);
+
+      background:
+        rgba(0, 0, 0, 0.5);
+
       justify-content: center;
       align-items: center;
+
       z-index: 100;
+
       padding: 20px;
     }
 
@@ -183,88 +267,131 @@
 
     .modal-content {
       background: white;
+
       padding: 25px;
+
       border-radius: 12px;
+
       width: 90%;
+
       max-width: 550px;
+
       display: flex;
+
       flex-direction: column;
+
       gap: 18px;
+
       max-height: 90vh;
+
       overflow-y: auto;
     }
 
     .modal-header {
       display: flex;
+
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid #e2e8f0;
+
+      border-bottom:
+        1px solid #e2e8f0;
+
       padding-bottom: 10px;
     }
 
     .form-group {
       display: flex;
+
       flex-direction: column;
+
       gap: 6px;
     }
 
     .form-group label {
       font-size: 0.88rem;
+
       font-weight: bold;
+
       color: #334155;
     }
 
     .form-group input {
       padding: 10px 12px;
-      border: 1px solid #cbd5e1;
+
+      border:
+        1px solid #cbd5e1;
+
       border-radius: 6px;
+
       font-size: 0.9rem;
     }
 
     .helper-text {
       font-size: 0.78rem;
+
       color: #94a3b8;
+
       margin-top: 2px;
+
       line-height: 1.3;
     }
 
     .radio-group {
       display: flex;
+
       gap: 20px;
+
       margin-top: 4px;
+
       align-items: center;
+
       flex-wrap: wrap;
     }
 
     .radio-label {
       display: flex;
+
       align-items: center;
+
       gap: 6px;
+
       font-size: 0.9rem;
+
       color: #1e293b;
+
       cursor: pointer;
     }
 
     .radio-label input[type="radio"] {
       cursor: pointer;
+
       width: 16px;
       height: 16px;
     }
 
     .modal-footer {
       display: flex;
+
       justify-content: flex-end;
+
       gap: 10px;
+
       margin-top: 10px;
     }
 
     .save-btn {
       background: #16a34a;
+
       color: white;
+
       border: none;
+
       padding: 10px 18px;
+
       border-radius: 6px;
+
       cursor: pointer;
+
       font-weight: bold;
     }
 
@@ -287,10 +414,17 @@
 <body>
 
   <header>
-    <h1>✨ 사주그랩 백서 RAG 챗봇</h1>
+
+    <h1>
+      ✨ 사주그랩 백서 RAG 챗봇
+    </h1>
 
     <div class="header-controls">
-      <span class="model-badge" id="header-model-badge">
+
+      <span
+        class="model-badge"
+        id="header-model-badge"
+      >
         로딩 중...
       </span>
 
@@ -302,16 +436,23 @@
       >
         ⚙️
       </button>
+
     </div>
+
   </header>
 
   <div id="chat-container">
+
     <div class="message ai">
-      안녕하세요! 사주그랩 기술 백서에 대해 무엇이든 물어보세요.
+      안녕하세요!
+      사주그랩 기술 백서에 대해
+      무엇이든 물어보세요.
     </div>
+
   </div>
 
   <form id="input-container">
+
     <input
       type="text"
       id="user-input"
@@ -327,52 +468,80 @@
     >
       전송
     </button>
+
   </form>
 
-  <div class="modal-overlay" id="settings-modal">
+  <!-- 설정 모달 -->
+
+  <div
+    class="modal-overlay"
+    id="settings-modal"
+  >
+
     <div class="modal-content">
 
       <div class="modal-header">
-        <h3>⚙️ RAG 설정</h3>
+
+        <h3>
+          ⚙️ RAG 설정
+        </h3>
 
         <button
           class="icon-btn"
           id="close-modal-btn"
-          style="color: #64748b;"
+          style="color:#64748b;"
           type="button"
         >
           ✕
         </button>
+
       </div>
 
+      <!-- 모델 -->
+
       <div class="form-group">
-        <label>LLM 모델</label>
+
+        <label>
+          LLM 모델
+        </label>
 
         <div class="radio-group">
 
           <label class="radio-label">
+
             <input
               type="radio"
               name="cfg-model"
               value="gemini-3.1-flash-lite"
             >
+
             Gemini 3.1 Flash-Lite
+
           </label>
 
           <label class="radio-label">
+
             <input
               type="radio"
               name="cfg-model"
               value="gpt-5.6-luna"
             >
+
             GPT-5.6 Luna
+
           </label>
 
         </div>
+
       </div>
 
+      <!-- Top K -->
+
       <div class="form-group">
-        <label>검색 청크 수 (Top K)</label>
+
+        <label>
+          검색 청크 수 (Top K)
+        </label>
 
         <input
           type="number"
@@ -383,12 +552,19 @@
         >
 
         <span class="helper-text">
-          Vector Search에서 먼저 가져올 백서 청크의 개수입니다.
+          Vector Search에서 먼저 가져올
+          백서 청크의 개수입니다.
         </span>
+
       </div>
 
+      <!-- Distance -->
+
       <div class="form-group">
-        <label>검색 거리 기준 (Cosine Distance)</label>
+
+        <label>
+          검색 거리 기준 (Cosine Distance)
+        </label>
 
         <input
           type="number"
@@ -399,27 +575,16 @@
         >
 
         <span class="helper-text">
-          값이 낮을수록 질문과 더 유사한 청크만 통과합니다.
+          값이 낮을수록 질문과 더 유사한
+          청크만 답변 근거로 사용합니다.
         </span>
+
       </div>
 
-      <div class="form-group">
-        <label>창의성 온도 (Temperature)</label>
-
-        <input
-          type="number"
-          id="cfg-temp"
-          step="0.1"
-          min="0"
-          max="1"
-        >
-
-        <span class="helper-text">
-          백서 기반 답변이므로 낮은 값을 권장합니다.
-        </span>
-      </div>
+      <!-- 저장 -->
 
       <div class="modal-footer">
+
         <button
           type="button"
           class="save-btn"
@@ -427,12 +592,15 @@
         >
           저장 및 창 닫기
         </button>
+
       </div>
 
     </div>
+
   </div>
 
   <script>
+
     /**
      * ------------------------------------------------------------------------
      * DOM
@@ -440,119 +608,175 @@
      */
 
     const chatContainer =
-      document.getElementById('chat-container');
+      document.getElementById(
+        'chat-container'
+      );
 
     const inputForm =
-      document.getElementById('input-container');
+      document.getElementById(
+        'input-container'
+      );
 
     const userInput =
-      document.getElementById('user-input');
+      document.getElementById(
+        'user-input'
+      );
 
     const sendButton =
-      document.getElementById('send-btn');
+      document.getElementById(
+        'send-btn'
+      );
 
     const modal =
-      document.getElementById('settings-modal');
+      document.getElementById(
+        'settings-modal'
+      );
 
     const openSettingsBtn =
-      document.getElementById('open-settings-btn');
+      document.getElementById(
+        'open-settings-btn'
+      );
 
     const closeModalBtn =
-      document.getElementById('close-modal-btn');
+      document.getElementById(
+        'close-modal-btn'
+      );
 
     const saveSettingsBtn =
-      document.getElementById('save-settings-btn');
+      document.getElementById(
+        'save-settings-btn'
+      );
 
     const headerModelBadge =
-      document.getElementById('header-model-badge');
+      document.getElementById(
+        'header-model-badge'
+      );
 
     /**
      * ------------------------------------------------------------------------
-     * 모델
+     * 모델 이름
      * ------------------------------------------------------------------------
      */
 
     const MODEL_NAMES = {
-      'gemini-3.1-flash-lite': 'Gemini 3.1 Flash-Lite',
-      'gpt-5.6-luna': 'GPT-5.6 Luna'
+      'gemini-3.1-flash-lite':
+        'Gemini 3.1 Flash-Lite',
+
+      'gpt-5.6-luna':
+        'GPT-5.6 Luna'
     };
 
     /**
      * ------------------------------------------------------------------------
-     * 기본 UI 설정
-     *
-     * systemPrompt는 저장하지 않습니다.
-     * 서버가 고정된 system prompt를 사용합니다.
+     * 기본 설정
      * ------------------------------------------------------------------------
+     *
+     * temperature 없음.
+     *
+     * GPT-5.6 Luna는 서버에서 reasoning.effort를 관리합니다.
      */
 
     const DEFAULT_CONFIG = {
-      model: 'gemini-3.1-flash-lite',
-      topK: 5,
-      distanceThreshold: 0.70,
-      temperature: 0.2
+      model:
+        'gemini-3.1-flash-lite',
+
+      topK:
+        5,
+
+      distanceThreshold:
+        0.70
     };
 
     /**
      * ------------------------------------------------------------------------
-     * localStorage
+     * 설정 읽기
      * ------------------------------------------------------------------------
      */
 
     function getConfig() {
-      const saved = localStorage.getItem('rag_config');
+
+      const saved =
+        localStorage.getItem(
+          'rag_config'
+        );
 
       if (!saved) {
-        return { ...DEFAULT_CONFIG };
+        return {
+          ...DEFAULT_CONFIG
+        };
       }
 
       try {
-        const parsed = JSON.parse(saved);
+
+        const parsed =
+          JSON.parse(saved);
 
         return {
           ...DEFAULT_CONFIG,
           ...parsed
         };
+
       } catch {
-        return { ...DEFAULT_CONFIG };
+
+        return {
+          ...DEFAULT_CONFIG
+        };
+
       }
+
     }
 
+    /**
+     * ------------------------------------------------------------------------
+     * 설정 저장
+     * ------------------------------------------------------------------------
+     */
+
     function saveConfig(config) {
+
       localStorage.setItem(
         'rag_config',
         JSON.stringify(config)
       );
+
     }
 
     /**
      * ------------------------------------------------------------------------
-     * Header
+     * 헤더 모델 표시
      * ------------------------------------------------------------------------
      */
 
-    function updateHeaderBadge(modelValue) {
+    function updateHeaderBadge(
+      model
+    ) {
+
       headerModelBadge.innerText =
-        MODEL_NAMES[modelValue] || modelValue;
+        MODEL_NAMES[model] ||
+        model;
+
     }
 
     /**
      * ------------------------------------------------------------------------
-     * Settings
+     * 설정 UI 로드
      * ------------------------------------------------------------------------
      */
 
     function loadSettingsToUI() {
-      const config = getConfig();
 
-      document.getElementById('cfg-topk').value =
+      const config =
+        getConfig();
+
+      document.getElementById(
+        'cfg-topk'
+      ).value =
         config.topK;
 
-      document.getElementById('cfg-distance').value =
+      document.getElementById(
+        'cfg-distance'
+      ).value =
         config.distanceThreshold;
-
-      document.getElementById('cfg-temp').value =
-        config.temperature;
 
       const targetRadio =
         document.querySelector(
@@ -560,10 +784,14 @@
         );
 
       if (targetRadio) {
-        targetRadio.checked = true;
+        targetRadio.checked =
+          true;
       }
 
-      updateHeaderBadge(config.model);
+      updateHeaderBadge(
+        config.model
+      );
+
     }
 
     /**
@@ -572,74 +800,115 @@
      * ------------------------------------------------------------------------
      */
 
-    function appendMessage(sender, text) {
-      const msgDiv =
-        document.createElement('div');
+    function appendMessage(
+      sender,
+      text
+    ) {
 
-      msgDiv.classList.add(
+      const message =
+        document.createElement(
+          'div'
+        );
+
+      message.classList.add(
         'message',
         sender
       );
 
-      msgDiv.innerText = text;
+      message.innerText =
+        text;
 
-      chatContainer.appendChild(msgDiv);
+      chatContainer.appendChild(
+        message
+      );
 
       chatContainer.scrollTop =
         chatContainer.scrollHeight;
 
-      return msgDiv;
+      return message;
+
     }
 
     /**
      * ------------------------------------------------------------------------
-     * 검색 근거 표시
+     * 검색 근거 추가
      * ------------------------------------------------------------------------
      */
 
-    function appendRetrievalInfo(messageDiv, data) {
-      const retrieval = data?.retrieval;
+    function appendRetrievalInfo(
+      messageElement,
+      data
+    ) {
+
+      const retrieval =
+        data?.retrieval;
 
       if (!retrieval) {
         return;
       }
 
       const meta =
-        document.createElement('div');
+        document.createElement(
+          'div'
+        );
 
-      meta.className = 'message-meta';
+      meta.className =
+        'message-meta';
 
       meta.innerText =
-        `모델: ${MODEL_NAMES[data.model] || data.model} · ` +
-        `검색 ${retrieval.searchedCount}개 · ` +
-        `채택 ${retrieval.matchedCount}개`;
+        `모델: ${
+          MODEL_NAMES[data.model] ||
+          data.model
+        } · ` +
+        `검색 ${
+          retrieval.searchedCount
+        }개 · ` +
+        `채택 ${
+          retrieval.matchedCount
+        }개`;
 
-      messageDiv.appendChild(meta);
+      messageElement.appendChild(
+        meta
+      );
 
       if (
-        !Array.isArray(retrieval.chunks) ||
+        !Array.isArray(
+          retrieval.chunks
+        ) ||
         retrieval.chunks.length === 0
       ) {
+
         return;
+
       }
 
       const sources =
-        document.createElement('div');
+        document.createElement(
+          'div'
+        );
 
-      sources.className = 'sources';
+      sources.className =
+        'sources';
 
       retrieval.chunks.forEach(
         (chunk, index) => {
-          const item =
-            document.createElement('details');
 
-          item.className = 'source-item';
+          const item =
+            document.createElement(
+              'details'
+            );
+
+          item.className =
+            'source-item';
 
           const summary =
-            document.createElement('summary');
+            document.createElement(
+              'summary'
+            );
 
           const distance =
-            typeof chunk.distance === 'number'
+            typeof chunk.distance ===
+            'number'
               ? chunk.distance.toFixed(4)
               : 'n/a';
 
@@ -650,27 +919,45 @@
               : '';
 
           summary.innerText =
-            `근거 ${index + 1} · distance ${distance}${chunkIndex}`;
+            `근거 ${
+              index + 1
+            } · distance ${
+              distance
+            }${chunkIndex}`;
 
           const text =
-            document.createElement('div');
+            document.createElement(
+              'div'
+            );
 
-          text.className = 'source-text';
+          text.className =
+            'source-text';
 
           text.innerText =
             chunk.text || '';
 
-          item.appendChild(summary);
-          item.appendChild(text);
+          item.appendChild(
+            summary
+          );
 
-          sources.appendChild(item);
+          item.appendChild(
+            text
+          );
+
+          sources.appendChild(
+            item
+          );
+
         }
       );
 
-      messageDiv.appendChild(sources);
+      messageElement.appendChild(
+        sources
+      );
 
       chatContainer.scrollTop =
         chatContainer.scrollHeight;
+
     }
 
     /**
@@ -682,6 +969,7 @@
     inputForm.addEventListener(
       'submit',
       async (event) => {
+
         event.preventDefault();
 
         const query =
@@ -691,128 +979,170 @@
           return;
         }
 
-        const config = getConfig();
+        const config =
+          getConfig();
 
         appendMessage(
           'user',
           query
         );
 
-        userInput.value = '';
+        userInput.value =
+          '';
 
-        sendButton.disabled = true;
+        sendButton.disabled =
+          true;
 
-        const loadingMsg =
+        const loadingMessage =
           appendMessage(
             'ai',
             '🔍 백서 검색 및 답변 생성 중...'
           );
 
         try {
+
           const response =
-            await fetch('/api/chat', {
-              method: 'POST',
-              headers: {
-                'Content-Type':
-                  'application/json'
-              },
-              body: JSON.stringify({
-                message: query,
-                model: config.model,
-                topK: config.topK,
-                distanceThreshold:
-                  config.distanceThreshold,
-                temperature:
-                  config.temperature
-              })
-            });
+            await fetch(
+              '/api/chat',
+              {
+                method:
+                  'POST',
+
+                headers: {
+                  'Content-Type':
+                    'application/json'
+                },
+
+                body:
+                  JSON.stringify({
+                    message:
+                      query,
+
+                    model:
+                      config.model,
+
+                    topK:
+                      config.topK,
+
+                    distanceThreshold:
+                      config.distanceThreshold
+                  })
+              }
+            );
 
           let data;
 
           try {
-            data = await response.json();
+
+            data =
+              await response.json();
+
           } catch {
+
             throw new Error(
               `서버가 올바른 JSON 응답을 반환하지 않았습니다. (${response.status})`
             );
+
           }
 
           if (
             !response.ok ||
             data.error
           ) {
+
             throw new Error(
               data.error ||
               `서버 에러 (${response.status})`
             );
+
           }
 
-          loadingMsg.innerText =
+          loadingMessage.innerText =
             data.answer ||
             '답변을 가져올 수 없습니다.';
 
           appendRetrievalInfo(
-            loadingMsg,
+            loadingMessage,
             data
           );
 
         } catch (error) {
-          loadingMsg.innerText =
+
+          loadingMessage.innerText =
             '❌ 오류가 발생했습니다: ' +
-            (error?.message ||
-              '알 수 없는 오류');
+            (
+              error?.message ||
+              '알 수 없는 오류'
+            );
 
         } finally {
-          sendButton.disabled = false;
+
+          sendButton.disabled =
+            false;
+
           userInput.focus();
+
         }
+
       }
     );
 
     /**
      * ------------------------------------------------------------------------
-     * 초기화
-     * ------------------------------------------------------------------------
-     */
-
-    loadSettingsToUI();
-
-    /**
-     * ------------------------------------------------------------------------
-     * 설정창
+     * 설정창 열기
      * ------------------------------------------------------------------------
      */
 
     openSettingsBtn.addEventListener(
       'click',
       () => {
+
         loadSettingsToUI();
 
         modal.classList.add(
           'active'
         );
+
       }
     );
+
+    /**
+     * ------------------------------------------------------------------------
+     * 설정창 닫기
+     * ------------------------------------------------------------------------
+     */
 
     closeModalBtn.addEventListener(
       'click',
       () => {
+
         modal.classList.remove(
           'active'
         );
+
       }
     );
+
+    /**
+     * ------------------------------------------------------------------------
+     * 바깥 클릭으로 닫기
+     * ------------------------------------------------------------------------
+     */
 
     modal.addEventListener(
       'click',
       (event) => {
+
         if (
           event.target === modal
         ) {
+
           modal.classList.remove(
             'active'
           );
+
         }
+
       }
     );
 
@@ -825,7 +1155,8 @@
     saveSettingsBtn.addEventListener(
       'click',
       () => {
-        const selectedModelRadio =
+
+        const selectedRadio =
           document.querySelector(
             'input[name="cfg-model"]:checked'
           );
@@ -845,16 +1176,10 @@
             ).value
           );
 
-        const temperature =
-          parseFloat(
-            document.getElementById(
-              'cfg-temp'
-            ).value
-          );
-
         const newConfig = {
+
           model:
-            selectedModelRadio?.value ||
+            selectedRadio?.value ||
             DEFAULT_CONFIG.model,
 
           topK:
@@ -865,21 +1190,19 @@
               : DEFAULT_CONFIG.topK,
 
           distanceThreshold:
-            Number.isFinite(distanceThreshold) &&
+            Number.isFinite(
+              distanceThreshold
+            ) &&
             distanceThreshold >= 0 &&
             distanceThreshold <= 2
               ? distanceThreshold
-              : DEFAULT_CONFIG.distanceThreshold,
+              : DEFAULT_CONFIG.distanceThreshold
 
-          temperature:
-            Number.isFinite(temperature) &&
-            temperature >= 0 &&
-            temperature <= 1
-              ? temperature
-              : DEFAULT_CONFIG.temperature
         };
 
-        saveConfig(newConfig);
+        saveConfig(
+          newConfig
+        );
 
         updateHeaderBadge(
           newConfig.model
@@ -888,9 +1211,20 @@
         modal.classList.remove(
           'active'
         );
+
       }
     );
+
+    /**
+     * ------------------------------------------------------------------------
+     * 초기화
+     * ------------------------------------------------------------------------
+     */
+
+    loadSettingsToUI();
+
   </script>
 
 </body>
+
 </html>
